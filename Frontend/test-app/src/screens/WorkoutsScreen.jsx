@@ -110,6 +110,7 @@ function Section({ title, right }) {
   );
 }
 
+
 function RowButton({ icon, title, subtitle, onClick }) {
   return (
     <button className="wkRowBtn" onClick={onClick}>
@@ -215,6 +216,23 @@ function DiscoverWorkoutCard({ w, onToggle, alreadyAdded }) {
       >
         {actionText}
       </button>
+    </div>
+  );
+}
+
+function WeightWarning({ weight, onCancel, onConfirm }) {
+  if (!weight) return null;
+
+  return (
+    <div className="wkSheetBackdrop" role="presentation">
+      <div className="wkSheet wkWarningSheet" role="dialog" aria-modal="true">
+        <div className="wkWarningTitle">That is a lot of weight</div>
+        <div className="wkWarningText">You entered {weight} kg. Are you sure?</div>
+        <div className="wkWarningActions">
+          <button className="wkWarningBtn" onClick={onCancel}>Cancel</button>
+          <button className="wkWarningBtn primary" onClick={onConfirm}>Confirm</button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -397,6 +415,7 @@ function ActiveWorkoutScreen({ routine, onClose, onComplete }) {
     })
   );
   const [newExercise, setNewExercise] = useState("");
+  const [weightWarning, setWeightWarning] = useState(null);
 
   const handleAddExercise = () => {
     if (newExercise.trim()) {
@@ -438,30 +457,49 @@ function ActiveWorkoutScreen({ routine, onClose, onComplete }) {
         };
       })
     );
+
+    if (field === "weight") {
+      const numeric = parseFloat(value);
+      if (numeric && numeric > 1000) {
+        setWeightWarning(numeric);
+      }
+    }
   };
 
   const totalSets = exercises.reduce((sum, ex) => sum + ex.sets.length, 0);
+  const totalWeight = exercises.reduce((weight, ex) => {
+    return weight + ex.sets.reduce((setSum, set) => {
+      const parsedW = parseFloat(set.weight);
+      const parsedR = parseFloat(set.reps);
+      if (!Number.isFinite(parsedW) || !Number.isFinite(parsedR)) return setSum;
+      return setSum + Math.max(0, parsedW * parsedR);
+    }, 0);
+  }, 0);
   const canComplete = totalSets > 0;
 
   return (
-    <div className="wkActiveWorkout">
-      <div className="wkWorkoutHero">
-        <div className="wkWorkoutHeader">
-          <button className="wkBackBtn" onClick={onClose}>Cancel</button>
-          <div className="wkWorkoutTitle">{routine.title}</div>
-          <button className="wkCloseBtn" onClick={onClose} aria-label="Close workout">×</button>
-        </div>
+    <>
+      <div className="wkActiveWorkout">
+        <div className="wkWorkoutHero">
+          <div className="wkWorkoutHeader">
+            <button className="wkBackBtn" onClick={onClose}>Cancel</button>
+            <div className="wkWorkoutTitle">{routine.title}</div>
+            <button className="wkCloseBtn" onClick={onClose} aria-label="Close workout">×</button>
+          </div>
         <div className="wkHeroStats">
           <div className="wkHeroStat"><span>Exercises</span><b>{exercises.length}</b></div>
           <div className="wkHeroStat"><span>Sets</span><b>{totalSets}</b></div>
+          <div className="wkHeroStat"><span>Total weight</span><b>{Math.round(totalWeight)} kg</b></div>
         </div>
-      </div>
+        </div>
 
-      <div className="wkWorkoutBody">
-        <div className="wkWorkoutMeta">Tap into weight/reps to log each set.</div>
-        <div className="wkExercisesList">
-          {exercises.map((ex) => (
-            <div key={ex.id} className="wkWorkoutExercise">
+        <div className="wkWorkoutBody">
+          <div className="wkWorkoutMeta">
+            Tap into weight/reps to log each set · Total weight: {Math.round(totalWeight)} kg
+          </div>
+          <div className="wkExercisesList">
+            {exercises.map((ex) => (
+              <div key={ex.id} className="wkWorkoutExercise">
               <div className="wkExerciseHeader">
                 <span className="wkExerciseName">{ex.name}</span>
                 <button className="wkRemoveBtn" onClick={() => removeExercise(ex.id)}>×</button>
@@ -537,8 +575,17 @@ function ActiveWorkoutScreen({ routine, onClose, onComplete }) {
         >
           ✓ Complete Workout
         </button>
-      </div>
-    </div>
+        </div>
+        </div>
+
+      {weightWarning && (
+        <WeightWarning
+          weight={weightWarning}
+          onCancel={() => setWeightWarning(null)}
+          onConfirm={() => setWeightWarning(null)}
+        />
+      )}
+    </>
   );
 }
 
@@ -594,6 +641,13 @@ function WorkoutCompleteSheet({ open, summary, onDone }) {
         <div className="wkDoneIcon">✓</div>
         <div className="wkDoneTitle">Workout Completed</div>
         <div className="wkDoneMeta">{summary.exerciseCount} exercises • {summary.setCount} sets logged</div>
+        <div className="wkDoneHint">Want to post this workout to your feed?</div>
+        <button
+          className="wkDoneBtn"
+          onClick={() => alert("Share this workout?")}
+        >
+          Post this to your friends?
+        </button>
         <button className="wkDoneBtn" onClick={onDone}>Done</button>
       </div>
     </div>

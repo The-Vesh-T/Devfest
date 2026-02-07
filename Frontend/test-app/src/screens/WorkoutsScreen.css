@@ -450,31 +450,44 @@
   color: rgba(255,255,255,0.60);
   font-size: 12px;
   font-weight: 700;
+  line-height: 1.4;
+  word-break: break-word;
 }
 
 .wkHeroStats{
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
 }
 
 .wkHeroStat{
   border: 1px solid rgba(255,255,255,0.12);
   background: rgba(255,255,255,0.03);
   border-radius: 12px;
-  padding: 8px 10px;
+  padding: 10px 12px;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
   color: rgba(255,255,255,0.80);
   font-size: 12px;
   font-weight: 700;
+  min-height: 64px;
+}
+
+.wkHeroStat span{
+  text-transform: none;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  color: rgba(255,255,255,0.6);
 }
 
 .wkHeroStat b{
   color: rgba(255,255,255,0.95);
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 950;
+  line-height: 1.1;
+  word-break: break-word;
 }
 
 .wkWorkoutBody{
@@ -691,6 +704,55 @@
   color: rgba(255,255,255,0.62);
 }
 
+.wkDoneHint{
+  font-size: 12px;
+  color: rgba(255,255,255,0.55);
+  margin-top: -2px;
+}
+
+.wkWarningSheet{
+  border-radius: 18px;
+  background: #151823;
+  padding: 18px;
+  border: 1px solid rgba(255,255,255,0.12);
+  text-align: center;
+  display: grid;
+  gap: 12px;
+}
+
+.wkWarningTitle{
+  font-size: 16px;
+  font-weight: 900;
+  color: rgba(255,255,255,0.92);
+}
+
+.wkWarningText{
+  font-size: 13px;
+  color: rgba(255,255,255,0.65);
+}
+
+.wkWarningActions{
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.wkWarningBtn{
+  padding: 8px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.18);
+  color: rgba(255,255,255,0.92);
+  background: transparent;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.wkWarningBtn.primary{
+  background: rgba(125,211,252,0.16);
+  border-color: rgba(125,211,252,0.3);
+  color: rgba(125,211,252,0.98);
+}
+
 .wkDoneBtn{
   margin-top: 6px;
   width: 100%;
@@ -785,10 +847,11 @@
 }
 
 .wkCreateSheet{
-  min-height: 74vh;
-  max-height: 86vh;
+  min-height: 64vh;
+  max-height: 82vh;
   overflow-y: auto;
   padding-top: 8px;
+  padding-bottom: 18px;
 }
 
 .wkSheetHandle{

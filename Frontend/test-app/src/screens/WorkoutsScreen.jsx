@@ -8,12 +8,54 @@ const MOCK_ROUTINES = [
 ];
 
 const DISCOVER_WORKOUTS = [
-  { id: "d1", title: "Full Body", difficulty: "Beginner", duration: "40 min", exercises: 8 },
-  { id: "d2", title: "HIIT Cardio", difficulty: "Advanced", duration: "20 min", exercises: 6 },
-  { id: "d3", title: "Legs & Glutes", difficulty: "Intermediate", duration: "50 min", exercises: 7 },
-  { id: "d4", title: "Core & Abs", difficulty: "Beginner", duration: "25 min", exercises: 5 },
-  { id: "d5", title: "Back & Biceps", difficulty: "Intermediate", duration: "45 min", exercises: 6 },
-  { id: "d6", title: "Mobility & Stretch", difficulty: "Beginner", duration: "30 min", exercises: 10 },
+  {
+    id: "d1",
+    title: "Full Body",
+    difficulty: "Beginner",
+    duration: "40 min",
+    exercises: 8,
+    exampleMoves: ["Squat", "Push-ups", "Deadlift"]
+  },
+  {
+    id: "d2",
+    title: "HIIT Cardio",
+    difficulty: "Advanced",
+    duration: "20 min",
+    exercises: 6,
+    exampleMoves: ["Burpees", "Mountain Climbers", "Sprint"]
+  },
+  {
+    id: "d3",
+    title: "Legs & Glutes",
+    difficulty: "Intermediate",
+    duration: "50 min",
+    exercises: 7,
+    exampleMoves: ["Goblet Squat", "Lunge", "Hip Thrust"]
+  },
+  {
+    id: "d4",
+    title: "Core & Abs",
+    difficulty: "Beginner",
+    duration: "25 min",
+    exercises: 5,
+    exampleMoves: ["Plank", "Dead Bug", "Bicycle Crunch"]
+  },
+  {
+    id: "d5",
+    title: "Back & Biceps",
+    difficulty: "Intermediate",
+    duration: "45 min",
+    exercises: 6,
+    exampleMoves: ["Pull-up", "Barbell Row", "Hammer Curl"]
+  },
+  {
+    id: "d6",
+    title: "Mobility & Stretch",
+    difficulty: "Beginner",
+    duration: "30 min",
+    exercises: 10,
+    exampleMoves: ["Hip Opener", "Cat-Cow", "Shoulder Pass-Through"]
+  },
 ];
 
 const ROUTINES_STORAGE_KEY = "workouts_routines_v1";
@@ -159,6 +201,11 @@ function DiscoverWorkoutCard({ w, onToggle, alreadyAdded }) {
         <span>⏱️ {w.duration}</span>
         <span>🏋️ {w.exercises} exercises</span>
       </div>
+      <div className="wkDiscoverExamples">
+        {w.exampleMoves.map((move) => (
+          <span key={move} className="wkDiscoverExample">{move}</span>
+        ))}
+      </div>
       <button
         className={`wkAddBtn ${alreadyAdded ? "wkAddBtnRemove" : ""}`}
         onClick={(e) => {
@@ -174,8 +221,20 @@ function DiscoverWorkoutCard({ w, onToggle, alreadyAdded }) {
 
 function CreateRoutineSheet({ open, onClose, onCreate }) {
   const [title, setTitle] = useState("");
+  const [exerciseInput, setExerciseInput] = useState("");
+  const [exerciseList, setExerciseList] = useState([]);
   const canSave = title.trim().length > 0;
 
+  const handleExerciseAdd = () => {
+    const trimmed = exerciseInput.trim();
+    if (!trimmed) return;
+    setExerciseList((prev) => [...prev, trimmed]);
+    setExerciseInput("");
+  };
+
+  const removeExercise = (idx) => {
+    setExerciseList((prev) => prev.filter((_, i) => i !== idx));
+  };
   if (!open) return null;
 
   return (
@@ -191,8 +250,10 @@ function CreateRoutineSheet({ open, onClose, onCreate }) {
             onClick={() => {
               const t = title.trim();
               if (!t) return;
-              onCreate(t);
+              onCreate(t, exerciseList);
               setTitle("");
+              setExerciseList([]);
+              setExerciseInput("");
               onClose();
             }}
           >
@@ -208,8 +269,10 @@ function CreateRoutineSheet({ open, onClose, onCreate }) {
             onChange={(e) => setTitle(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter" && canSave) {
-                onCreate(title.trim());
+                onCreate(title.trim(), exerciseList);
                 setTitle("");
+                setExerciseList([]);
+                setExerciseInput("");
                 onClose();
               }
             }}
@@ -218,12 +281,32 @@ function CreateRoutineSheet({ open, onClose, onCreate }) {
           />
 
           <div className="wkCreateSectionLabel">Exercises</div>
-          <div className="wkEmpty">
-            <div className="wkEmptyText">
-              No exercises yet
-            </div>
-            <button className="wkAddExerciseBtn">+ Add exercise</button>
+          <div className="wkExerciseInputRow">
+            <input
+              className="wkSetInput"
+              value={exerciseInput}
+              onChange={(e) => setExerciseInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleExerciseAdd()}
+              placeholder="Add exercise"
+            />
+            <button className="wkAddExerciseBtn" type="button" onClick={handleExerciseAdd}>
+              + Add
+            </button>
           </div>
+          {exerciseList.length === 0 ? (
+            <div className="wkEmpty">
+              <div className="wkEmptyText">No exercises yet</div>
+            </div>
+          ) : (
+            <div className="wkExerciseList">
+              {exerciseList.map((exercise, idx) => (
+                <div key={`${exercise}-${idx}`} className="wkExerciseTag">
+                  <span>{exercise}</span>
+                  <button onClick={() => removeExercise(idx)}>×</button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -391,6 +474,9 @@ function ActiveWorkoutScreen({ routine, onClose, onComplete }) {
                     <input
                       className="wkSetInput"
                       placeholder="kg"
+                      type="number"
+                      min="0"
+                      step="0.5"
                       inputMode="decimal"
                       value={set.weight}
                       onChange={(e) => updateSetField(ex.id, set.id, "weight", e.target.value)}
@@ -398,6 +484,9 @@ function ActiveWorkoutScreen({ routine, onClose, onComplete }) {
                     <input
                       className="wkSetInput"
                       placeholder="reps"
+                      type="number"
+                      min="0"
+                      step="1"
                       inputMode="numeric"
                       value={set.reps}
                       onChange={(e) => updateSetField(ex.id, set.id, "reps", e.target.value)}
@@ -536,7 +625,7 @@ export default function WorkoutsScreen() {
     });
   }
 
-  function handleCreate(title) {
+  function handleCreate(title, exercises = []) {
     const normalizedTitle = normalizeTitle(title);
     const duplicate = routines.find((r) => normalizeTitle(r.title) === normalizedTitle);
     if (duplicate) {
@@ -545,10 +634,14 @@ export default function WorkoutsScreen() {
       return;
     }
 
-    updateRoutines((prev) => [
-      { id: `r_${Date.now()}`, title, meta: "0 exercises • ~0 min", description: "Custom routine", exercises: [] },
-      ...prev,
-    ]);
+    updateRoutines((prev) => {
+      const routineExercises = exercises.length ? exercises : [];
+      const meta = `${routineExercises.length} exercises • ~0 min`;
+      return [
+        { id: `r_${Date.now()}`, title, meta, description: "Custom routine", exercises: routineExercises },
+        ...prev,
+      ];
+    });
     setCreateOpen(false);
   }
 
@@ -581,7 +674,7 @@ export default function WorkoutsScreen() {
         title: workout.title, 
         meta: `${workout.exercises} exercises • ${workout.duration}`,
         description: workout.difficulty,
-        exercises: Array(workout.exercises).fill(null).map((_, i) => `Exercise ${i + 1}`)
+        exercises: workout.exampleMoves || Array(workout.exercises).fill(null).map((_, i) => `Exercise ${i + 1}`)
       },
       ...prev,
     ]);

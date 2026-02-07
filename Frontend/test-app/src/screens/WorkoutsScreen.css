@@ -271,6 +271,21 @@
   margin-bottom: 10px;
 }
 
+.wkDiscoverExamples{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.wkDiscoverExample{
+  font-size: 11px;
+  color: rgba(255,255,255,0.65);
+  background: rgba(255,255,255,0.02);
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
 .wkAddBtn{
   width: 100%;
   padding: 8px;
@@ -849,6 +864,38 @@
   color: rgba(255,255,255,0.70);
   font-size: 13px;
   font-weight: 900;
+}
+
+.wkExerciseInputRow{
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.wkExerciseList{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.wkExerciseTag{
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.03);
+  font-size: 12px;
+}
+
+.wkExerciseTag button{
+  border: none;
+  background: transparent;
+  color: rgba(248,113,113,0.88);
+  font-weight: 900;
+  cursor: pointer;
 }
 
 .wkEmpty{

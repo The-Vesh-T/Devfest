@@ -46,6 +46,12 @@ export default function App() {
     setCustomFoods((prev) => [{ ...food, id: `custom_${Date.now()}` }, ...prev]);
   };
 
+  const handleToggleFavorite = (id) => {
+    setCustomFoods((prev) =>
+      prev.map((food) => (food.id === id ? { ...food, favorite: !food.favorite } : food))
+    );
+  };
+
   return (
     <div className="stage">
       <PhoneFrame>
@@ -81,6 +87,7 @@ export default function App() {
           mode={mode}
           onCreateFood={handleCreateFood}
           customFoods={customFoods}
+          onToggleFavorite={handleToggleFavorite}
         />
       </PhoneFrame>
     </div>

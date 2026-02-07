@@ -197,11 +197,13 @@
   color: rgba(248,113,113,0.95);
   font-size: 18px;
   line-height: 1;
-  display: grid;
-  place-items: center;
+  padding: 0;
+  transform: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  align-self: start;
-  margin-top: 2px;
+  align-self: center;
   transition: transform 0.12s ease, background 0.18s ease;
 }
 
@@ -435,8 +437,11 @@
   color: rgba(255,255,255,0.86);
   font-size: 18px;
   line-height: 1;
-  display: grid;
-  place-items: center;
+  padding: 0;
+  transform: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
 }
 
@@ -534,9 +539,13 @@
   color: rgba(239,68,68,0.80);
   font-size: 18px;
   font-weight: 900;
+  line-height: 1;
+  padding: 0;
+  transform: none;
   cursor: pointer;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .wkSetsList{
@@ -603,8 +612,11 @@
   color: rgba(248,113,113,0.95);
   font-size: 18px;
   line-height: 1;
-  display: grid;
-  place-items: center;
+  padding: 0;
+  transform: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
 }
 

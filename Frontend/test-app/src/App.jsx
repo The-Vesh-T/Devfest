@@ -5,6 +5,7 @@ import PhoneFrame from "./components/PhoneFrame";
 import TopBar from "./components/TopBar";
 import BottomNav from "./components/BottomNav";
 import AddSheet from "./components/AddSheet";
+import PostSheet from "./components/PostSheet";
 
 import HomeScreen from "./screens/HomeScreen";
 import FoodScreen from "./screens/FoodScreen";
@@ -41,25 +42,28 @@ export default function App() {
           <BottomNav tab={tab} setTab={setTab} />
         </div>
 
-        <AddSheet
-          open={sheetOpen}
-          onClose={() => setSheetOpen(false)}
-          mode={mode}
-          onPost={(post) => {
-            setPosts((prev) => [
-              {
-                id: Date.now(),
-                author: "You",
-                time: "now",
-                title: post.title,
-                body: post.body,
-                likes: 0,
-                replies: 0,
-              },
-              ...prev,
-            ]);
-          }}
-        />
+        {tab === "home" ? (
+          <PostSheet
+            open={sheetOpen}
+            onClose={() => setSheetOpen(false)}
+            onPost={(post) => {
+              setPosts((prev) => [
+                {
+                  id: Date.now(),
+                  author: "You",
+                  time: "now",
+                  title: post.title,
+                  body: post.body,
+                  likes: 0,
+                  replies: 0,
+                },
+                ...prev,
+              ]);
+            }}
+          />
+        ) : (
+          <AddSheet open={sheetOpen} onClose={() => setSheetOpen(false)} mode={mode} />
+        )}
       </PhoneFrame>
     </div>
   );

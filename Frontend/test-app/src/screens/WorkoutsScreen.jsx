@@ -89,6 +89,8 @@ function makeExercise(name) {
   };
 }
 
+const MAX_SETS_PER_EXERCISE = 10;
+
 function makeSet() {
   return {
     id: `set_${Date.now()}_${Math.random().toString(16).slice(2)}`,
@@ -97,6 +99,21 @@ function makeSet() {
     failure: false,
     dropset: false,
   };
+}
+
+function sanitizeNumberInput(raw, { allowDecimal = false, maxIntegerDigits = 3, maxDecimalDigits = 0 } = {}) {
+  if (raw === "" || raw == null) return "";
+  let value = String(raw).replace(/-/g, "");
+  value = value.replace(/[^0-9.]/g, "");
+  if (!value) return "";
+  if (!allowDecimal) {
+    return value.replace(/\D/g, "").slice(0, maxIntegerDigits);
+  }
+
+  const [integerPart = "", ...rest] = value.split(".");
+  const filteredInt = integerPart.replace(/\D/g, "").slice(0, maxIntegerDigits) || "0";
+  const decimalPart = rest.join("").replace(/\D/g, "").slice(0, maxDecimalDigits);
+  return decimalPart ? `${filteredInt}.${decimalPart}` : filteredInt;
 }
 
 function Section({ title, right }) {
@@ -417,6 +434,32 @@ function ActiveWorkoutScreen({ routine, onClose, onComplete }) {
   const [newExercise, setNewExercise] = useState("");
   const [weightWarning, setWeightWarning] = useState(null);
 
+  const handleNumericKeyDown = (e, { allowDecimal }) => {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    const allowedKeys = ["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab", "Home", "End"];
+    if (allowedKeys.includes(e.key)) return;
+    if (allowDecimal && e.key === ".") return;
+    if (/^\d$/.test(e.key)) return;
+    e.preventDefault();
+  };
+
+  const handleNumericPaste = (e, { allowDecimal, maxIntegerDigits, maxDecimalDigits }) => {
+    const pasted = e.clipboardData?.getData("text") ?? "";
+    const sanitized = sanitizeNumberInput(pasted, { allowDecimal, maxIntegerDigits, maxDecimalDigits });
+    if (pasted !== sanitized) {
+      e.preventDefault();
+      const target = e.target;
+      if (target) {
+        updateSetField(
+          target.dataset.exerciseId,
+          target.dataset.setId,
+          target.dataset.field,
+          sanitized
+        );
+      }
+    }
+  };
+
   const handleAddExercise = () => {
     if (newExercise.trim()) {
       setExercises((prev) => [...prev, makeExercise(newExercise.trim())]);
@@ -426,9 +469,11 @@ function ActiveWorkoutScreen({ routine, onClose, onComplete }) {
 
   const addSet = (exerciseId) => {
     setExercises((prev) =>
-      prev.map((ex) =>
-        ex.id === exerciseId ? { ...ex, sets: [...ex.sets, makeSet()] } : ex
-      )
+      prev.map((ex) => {
+        if (ex.id !== exerciseId) return ex;
+        if (ex.sets.length >= MAX_SETS_PER_EXERCISE) return ex;
+        return { ...ex, sets: [...ex.sets, makeSet()] };
+      })
     );
   };
 
@@ -445,7 +490,19 @@ function ActiveWorkoutScreen({ routine, onClose, onComplete }) {
     );
   };
 
-  const updateSetField = (exerciseId, setId, field, value) => {
+  const sanitizeFieldValue = (field, rawValue) => {
+    if (typeof rawValue !== "string") return rawValue;
+    if (field === "weight") {
+      return sanitizeNumberInput(rawValue, { allowDecimal: true, maxIntegerDigits: 4, maxDecimalDigits: 1 });
+    }
+    if (field === "reps") {
+      return sanitizeNumberInput(rawValue, { allowDecimal: false, maxIntegerDigits: 3 });
+    }
+    return rawValue;
+  };
+
+  const updateSetField = (exerciseId, setId, field, rawValue) => {
+    const value = sanitizeFieldValue(field, rawValue);
     setExercises((prev) =>
       prev.map((ex) => {
         if (ex.id !== exerciseId) return ex;
@@ -512,21 +569,29 @@ function ActiveWorkoutScreen({ routine, onClose, onComplete }) {
                     <input
                       className="wkSetInput"
                       placeholder="kg"
-                      type="number"
-                      min="0"
-                      step="0.5"
+                      type="text"
                       inputMode="decimal"
+                      pattern="[0-9]*[.]?[0-9]*"
+                      data-exercise-id={ex.id}
+                      data-set-id={set.id}
+                      data-field="weight"
                       value={set.weight}
+                      onKeyDown={(e) => handleNumericKeyDown(e, { allowDecimal: true })}
+                      onPaste={(e) => handleNumericPaste(e, { allowDecimal: true, maxIntegerDigits: 4, maxDecimalDigits: 1 })}
                       onChange={(e) => updateSetField(ex.id, set.id, "weight", e.target.value)}
                     />
                     <input
                       className="wkSetInput"
                       placeholder="reps"
-                      type="number"
-                      min="0"
-                      step="1"
+                      type="text"
                       inputMode="numeric"
+                      pattern="[0-9]*"
+                      data-exercise-id={ex.id}
+                      data-set-id={set.id}
+                      data-field="reps"
                       value={set.reps}
+                      onKeyDown={(e) => handleNumericKeyDown(e, { allowDecimal: false })}
+                      onPaste={(e) => handleNumericPaste(e, { allowDecimal: false, maxIntegerDigits: 3, maxDecimalDigits: 0 })}
                       onChange={(e) => updateSetField(ex.id, set.id, "reps", e.target.value)}
                     />
                     <button

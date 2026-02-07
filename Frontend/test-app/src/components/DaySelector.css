@@ -1,0 +1,66 @@
+.topbar.withDay {
+  height: 112px;
+  padding-bottom: 12px;
+}
+
+.topbar.withDay .appTitle {
+  top: 24px;
+}
+
+.daySchedule {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  margin: 54px 16px 0;
+}
+
+.dayArrow {
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.04);
+  color: rgba(255,255,255,0.70);
+  border-radius: 12px;
+  width: 34px;
+  height: 34px;
+  line-height: 0;
+  font-size: 20px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dayArrowIcon {
+  display: inline-block;
+  transform: scale(1.35);
+  font-weight: 900;
+}
+
+.dayLabel {
+  text-align: center;
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: #e9f7ff;
+  padding: 6px 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(125,211,252,0.35);
+  background: rgba(125,211,252,0.12);
+  line-height: 1.1;
+}
+
+.dayArrow:active {
+  transform: translateY(1px);
+}
+
+@media (max-width: 380px) {
+  .dayLabel {
+    font-size: 16px;
+  }
+  .dayArrow {
+    width: 30px;
+    height: 30px;
+  }
+}

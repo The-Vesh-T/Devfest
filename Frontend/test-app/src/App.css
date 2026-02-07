@@ -123,26 +123,6 @@ body {
   cursor: pointer;
 }
 
-/* Food summary */
-.summaryRow {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
-  margin-bottom: 12px;
-}
-
-.miniStat {
-  border: 1px solid rgba(255,255,255,0.10);
-  background: rgba(0,0,0,0.18);
-  border-radius: 16px;
-  padding: 12px;
-}
-
-.miniNum { font-weight: 950; }
-.miniLabel { color: rgba(255,255,255,0.60); font-size: 12px; margin-top: 2px; }
-
-.hint { margin-top: 12px; color: rgba(255,255,255,0.55); font-size: 13px; }
-
 /* Bottom nav */
 .bottomNav {
   position: absolute;

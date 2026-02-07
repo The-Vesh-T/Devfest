@@ -1,148 +1,3 @@
-.calRing {
-  position: relative;
-  display: grid;
-  place-items: center;
-  margin: 8px 0 16px;
-}
-
-.calRingSvg {
-  width: 160px;
-  height: 160px;
-  transform: rotate(-90deg);
-}
-
-.calRingTrack {
-  fill: none;
-  stroke: rgba(255,255,255,0.08);
-  stroke-width: 12;
-}
-
-.calRingProgress {
-  fill: none;
-  stroke: #7dd3fc;
-  stroke-width: 12;
-  stroke-linecap: round;
-  transition: stroke-dashoffset 0.6s ease;
-  filter: drop-shadow(0 6px 10px rgba(0,0,0,0.35));
-}
-
-.calRingCenter {
-  position: absolute;
-  display: grid;
-  place-items: center;
-  text-align: center;
-  gap: 4px;
-}
-
-.calRingNum {
-  font-size: 22px;
-  font-weight: 950;
-  letter-spacing: 0.3px;
-}
-
-.calRingLabel {
-  font-size: 11px;
-  color: rgba(255,255,255,0.65);
-  text-transform: uppercase;
-  letter-spacing: 0.7px;
-  font-weight: 800;
-}
-
-.calRingSub {
-  font-size: 11px;
-  color: rgba(255,255,255,0.60);
-}
-
-.summaryRow {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
-  margin-bottom: 12px;
-}
-
-.miniStat {
-  border: 1px solid rgba(255,255,255,0.10);
-  background: rgba(0,0,0,0.18);
-  border-radius: 16px;
-  padding: 12px;
-  text-align: center;
-}
-
-.miniNum { font-weight: 950; }
-.miniLabel { color: rgba(255,255,255,0.60); font-size: 12px; margin-top: 2px; }
-
-.miniStat.kcal {
-  border-color: rgba(125,211,252,0.35);
-  background: rgba(125,211,252,0.12);
-}
-
-.miniStat.protein {
-  border-color: rgba(125,211,252,0.35);
-  background: rgba(125,211,252,0.12);
-}
-
-.miniStat.carbs {
-  border-color: rgba(251,191,36,0.35);
-  background: rgba(251,191,36,0.12);
-}
-
-.miniStat.fat {
-  border-color: rgba(251,113,133,0.35);
-  background: rgba(251,113,133,0.12);
-}
-
-.hint { margin-top: 12px; color: rgba(255,255,255,0.55); font-size: 13px; }
-
-.mealMacros {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-  margin-top: 10px;
-}
-
-.mealMacro {
-  border: 1px solid rgba(255,255,255,0.10);
-  background: rgba(0,0,0,0.18);
-  border-radius: 12px;
-  padding: 8px 10px;
-  text-align: center;
-}
-
-.mealMacroNum {
-  font-weight: 900;
-  font-size: 13px;
-}
-
-.mealMacroLabel {
-  font-size: 11px;
-  color: rgba(255,255,255,0.60);
-  margin-top: 2px;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  font-weight: 700;
-}
-
-.mealMacro.protein {
-  border-color: rgba(125,211,252,0.35);
-  background: rgba(125,211,252,0.12);
-}
-
-.mealMacro.carbs {
-  border-color: rgba(251,191,36,0.35);
-  background: rgba(251,191,36,0.12);
-}
-
-.mealMacro.fat {
-  border-color: rgba(251,113,133,0.35);
-  background: rgba(251,113,133,0.12);
-}
-
-.fabFood {
-  border-color: rgba(125,211,252,0.45);
-  background: radial-gradient(circle at 30% 30%, rgba(125,211,252,1), rgba(56,189,248,0.75));
-  box-shadow: 0 16px 34px rgba(15,23,42,0.55);
-}
-
 .sheetActions {
   display: grid;
   gap: 10px;
@@ -237,6 +92,12 @@
   color: #e9f7ff;
 }
 
+.mealTab.custom.active {
+  background: rgba(255,255,255,0.04);
+  border-color: rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.75);
+}
+
 .mealTabPanel {
   display: grid;
   gap: 10px;
@@ -269,6 +130,8 @@
 
 .customMealForm .input {
   margin-bottom: 0;
+  padding: 10px;
+  font-size: 13px;
 }
 
 .customMealForm .row {
@@ -303,6 +166,12 @@
   justify-content: center;
 }
 
+.smallBtnPrimary {
+  border-color: rgba(125,211,252,0.55);
+  background: rgba(125,211,252,0.22);
+  color: #e9f7ff;
+}
+
 .backBtn {
   border: 1px solid rgba(255,255,255,0.14);
   background: rgba(255,255,255,0.04);
@@ -327,9 +196,11 @@
 
 .customStack {
   display: grid;
-  gap: 6px;
+  gap: 8px;
   width: 100%;
-  justify-items: center;
+  justify-items: stretch;
+  height: 100%;
+  grid-template-rows: 1fr auto;
 }
 
 .customStack .sheetOption,
@@ -343,6 +214,58 @@
   max-width: 360px;
   display: grid;
   gap: 8px;
+  align-content: start;
+  overflow: auto;
+  padding-bottom: 8px;
+}
+
+.customStack .customList,
+.customStack .customFooter {
+  max-width: 360px;
+}
+
+.customStack .customList {
+  justify-self: start;
+}
+
+.customStack .customFooter {
+  justify-self: center;
+}
+
+.rowBetween {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.starBtn {
+  border: none;
+  background: transparent;
+  color: #fbbf24;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  line-height: 1;
+  padding: 0;
+  text-align: center;
+  cursor: pointer;
+}
+
+.starBtn.active {
+  color: #f59e0b;
+}
+
+.customFooter {
+  width: 100%;
+  display: grid;
+  justify-items: center;
+  padding: 8px 0 2px;
+  position: sticky;
+  bottom: 0;
+  background: linear-gradient(180deg, rgba(18,21,27,0) 0%, rgba(18,21,27,0.85) 35%, rgba(18,21,27,0.95) 100%);
 }
 
 .sheetOption {
@@ -353,6 +276,7 @@
   color: #f2f2f2;
   padding: 12px 14px;
   cursor: pointer;
+  min-height: 64px;
 }
 
 .sheetOptionTitle {
@@ -363,20 +287,4 @@
 .sheetOptionSub {
   font-size: 12px;
   color: rgba(255,255,255,0.65);
-}
-.foodScreenBody {
-  margin-top: 0;
-}
-
-.foodContent {
-  padding-top: 0;
-}
-
-  cursor: pointer;
-}
-
-.dayChip.active {
-  background: rgba(125,211,252,0.18);
-  border-color: rgba(125,211,252,0.35);
-  color: #e9f7ff;
 }

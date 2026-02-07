@@ -24,6 +24,12 @@ const feed = [
 export default function HomeScreen() {
   const [showPercent, setShowPercent] = useState(true);
   const [focusedId, setFocusedId] = useState(null);
+  const [replyId, setReplyId] = useState(null);
+  const [pulse, setPulse] = useState({ like: null, save: null });
+  const [liked, setLiked] = useState({});
+  const [replyDrafts, setReplyDrafts] = useState({});
+  const [repliesById, setRepliesById] = useState({});
+  const [expandedReplies, setExpandedReplies] = useState({});
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -33,9 +39,35 @@ export default function HomeScreen() {
   }, []);
 
   const focusCard = (id) => setFocusedId((prev) => (prev === id ? null : id));
-  const clearFocus = () => setFocusedId(null);
+  const clearFocus = () => {
+    setFocusedId(null);
+    setReplyId(null);
+  };
 
-  const steps = { current: 6200, goal: 10000 };
+  const triggerPulse = (type, id) => {
+    setPulse((p) => ({ ...p, [type]: id }));
+    setTimeout(() => {
+      setPulse((p) => (p[type] === id ? { ...p, [type]: null } : p));
+    }, 450);
+  };
+
+  const toggleLike = (id) => {
+    setLiked((prev) => ({ ...prev, [id]: !prev[id] }));
+    triggerPulse("like", id);
+  };
+
+  const sendReply = (id) => {
+    const text = (replyDrafts[id] || "").trim();
+    if (!text) return;
+    setRepliesById((prev) => ({
+      ...prev,
+      [id]: [...(prev[id] || []), text],
+    }));
+    setReplyDrafts((prev) => ({ ...prev, [id]: "" }));
+    setReplyId(null);
+  };
+
+  const steps = { current: 10500, goal: 10000 };
   const stepsComplete = steps.current >= steps.goal;
   const macrosComplete = false;
   const microsComplete = true;
@@ -59,7 +91,7 @@ export default function HomeScreen() {
           <div>
             <div className="heroLabel">Today</div>
             <div className="heroValue">1,640 kcal</div>
-            <div className="heroSub">72g protein • 6.2k steps</div>
+            <div className="heroSub">72g protein • 10.5k steps</div>
             <div className="macroRow">
               <span className={`macroBadge ${macrosComplete ? "ok" : "miss"}`}>
                 Macro {macrosComplete ? "Complete" : "Missing"}
@@ -71,12 +103,8 @@ export default function HomeScreen() {
           </div>
           <div className="progressRing" aria-label="Daily goal progress">
             <div className="progressInner">
-              <div className="progressValue">
-                {showPercent ? "68%" : "520"}
-              </div>
-              <div className="progressLabel">
-                {showPercent ? "goal" : "kcal left"}
-              </div>
+              <div className="progressValue">{showPercent ? "68%" : "520"}</div>
+              <div className="progressLabel">{showPercent ? "goal" : "kcal left"}</div>
             </div>
           </div>
         </div>
@@ -148,6 +176,7 @@ export default function HomeScreen() {
 
       <div className="sectionTitle">Friends</div>
       <div className="cardList">
+        {focusedId && <div className="feedBackdrop" onClick={clearFocus} />}
         {feed.map((p) => (
           <div
             key={p.id}
@@ -164,19 +193,35 @@ export default function HomeScreen() {
               <div className="cardText">{p.text}</div>
 
               {focusedId === p.id && (
-                <div className="focusActions">
-                  <button className="focusBtn iconBtn" aria-label="Like">
+                <div className="focusActions" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    className={`focusBtn iconBtn ${pulse.like === p.id ? "pulse" : ""} ${
+                      liked[p.id] ? "liked" : ""
+                    }`}
+                    aria-label="Like"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleLike(p.id);
+                    }}
+                  >
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                       <path
                         d="M12 20s-7-4.35-7-9.2C5 7 6.9 5 9.3 5c1.6 0 2.7.9 2.7.9S13.1 5 14.7 5C17.1 5 19 7 19 10.8 19 15.65 12 20 12 20z"
-                        fill="none"
+                        fill={liked[p.id] ? "currentColor" : "none"}
                         stroke="currentColor"
                         strokeWidth="1.8"
                         strokeLinejoin="round"
                       />
                     </svg>
                   </button>
-                  <button className="focusBtn iconBtn" aria-label="Reply">
+                  <button
+                    className="focusBtn iconBtn"
+                    aria-label="Reply"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setReplyId((prev) => (prev === p.id ? null : p.id));
+                    }}
+                  >
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                       <path
                         d="M4 6h16a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H9l-5 4v-4H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"
@@ -188,7 +233,14 @@ export default function HomeScreen() {
                       />
                     </svg>
                   </button>
-                  <button className="focusBtn iconBtn" aria-label="Download">
+                  <button
+                    className={`focusBtn iconBtn ${pulse.save === p.id ? "pulse" : ""}`}
+                    aria-label="Save"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      triggerPulse("save", p.id);
+                    }}
+                  >
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                       <path
                         d="M12 4v10m0 0 4-4m-4 4-4-4M5 19h14"
@@ -200,9 +252,48 @@ export default function HomeScreen() {
                       />
                     </svg>
                   </button>
-                  <button className="focusBtn ghost" onClick={clearFocus}>
-                    Close
+                </div>
+              )}
+              {replyId === p.id && (
+                <div className="replyBox" onClick={(e) => e.stopPropagation()}>
+                  <input
+                    className="replyInput"
+                    placeholder="Write a reply..."
+                    value={replyDrafts[p.id] || ""}
+                    onChange={(e) =>
+                      setReplyDrafts((prev) => ({ ...prev, [p.id]: e.target.value }))
+                    }
+                  />
+                  <button className="replySend" onClick={() => sendReply(p.id)}>
+                    Send
                   </button>
+                </div>
+              )}
+              {repliesById[p.id]?.length > 0 && (
+                <div className="replyList">
+                  {(expandedReplies[p.id]
+                    ? repliesById[p.id]
+                    : repliesById[p.id].slice(0, 1)
+                  ).map((text, idx) => (
+                    <div key={`${p.id}-reply-${idx}`} className="replyItem">
+                      <span className="replyAuthor">You</span>
+                      <span className="replyText">{text}</span>
+                    </div>
+                  ))}
+                  {repliesById[p.id].length > 1 && (
+                    <button
+                      className="replyToggle"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setExpandedReplies((prev) => ({
+                          ...prev,
+                          [p.id]: !prev[p.id],
+                        }));
+                      }}
+                    >
+                      {expandedReplies[p.id] ? "Hide replies" : "View more replies"}
+                    </button>
+                  )}
                 </div>
               )}
             </div>

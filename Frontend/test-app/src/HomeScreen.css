@@ -271,6 +271,8 @@
 .feedCard.focused {
   border-color: rgba(125,211,252,0.45);
   box-shadow: 0 0 0 1px rgba(125,211,252,0.2) inset;
+  position: relative;
+  z-index: 2;
 }
 
 .focusActions {
@@ -278,6 +280,13 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
   margin-top: 12px;
+}
+
+.feedBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  z-index: 1;
 }
 
 .focusBtn {
@@ -303,8 +312,80 @@
   color: #f2f2f2;
 }
 
-.focusBtn.ghost {
-  grid-column: span 3;
+.focusBtn.liked svg {
+  color: #f87171;
+}
+
+.focusBtn.pulse {
+  animation: pulsePop 0.42s ease-out;
+}
+
+.replyBox {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+
+.replyInput {
+  background: rgba(0,0,0,0.25);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: #f2f2f2;
+  border-radius: 12px;
+  padding: 8px 10px;
+}
+
+.replySend {
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.06);
+  color: #e6f3ff;
+  border-radius: 12px;
+  padding: 8px 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.replyList {
+  margin-top: 10px;
+  display: grid;
+  gap: 6px;
+}
+
+.replyItem {
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.04);
+  display: grid;
+  gap: 4px;
+}
+
+.replyAuthor {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: rgba(255,255,255,0.55);
+  font-weight: 800;
+}
+
+.replyText {
+  font-size: 13px;
+  color: rgba(255,255,255,0.82);
+}
+
+.replyToggle {
+  border: none;
   background: transparent;
-  color: rgba(255,255,255,0.7);
+  color: rgba(125,211,252,0.9);
+  font-size: 12px;
+  font-weight: 800;
+  text-align: left;
+  padding: 4px 2px;
+  cursor: pointer;
+}
+
+@keyframes pulsePop {
+  0% { transform: scale(1); box-shadow: 0 0 0 rgba(255,255,255,0); }
+  50% { transform: scale(1.08); box-shadow: 0 0 10px rgba(125,211,252,0.25); }
+  100% { transform: scale(1); box-shadow: 0 0 0 rgba(255,255,255,0); }
 }

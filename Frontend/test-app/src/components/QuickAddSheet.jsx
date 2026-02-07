@@ -1,4 +1,4 @@
-export default function AddSheet({ open, onClose, mode }) {
+export default function QuickAddSheet({ open, onClose, mode }) {
   if (!open) return null;
 
   return (

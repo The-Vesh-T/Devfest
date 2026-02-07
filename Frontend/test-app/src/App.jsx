@@ -4,7 +4,7 @@ import "./App.css";
 import PhoneFrame from "./components/PhoneFrame";
 import TopBar from "./components/TopBar";
 import BottomNav from "./components/BottomNav";
-import AddSheet from "./components/AddSheet";
+import QuickAddSheet from "./components/QuickAddSheet";
 
 import HomeScreen from "./screens/HomeScreen";
 import FoodScreen from "./screens/FoodScreen";
@@ -48,7 +48,7 @@ export default function App() {
           <BottomNav tab={tab} setTab={setTab} />
         </div>
 
-        <AddSheet open={sheetOpen} onClose={() => setSheetOpen(false)} mode={mode} />
+        <QuickAddSheet open={sheetOpen} onClose={() => setSheetOpen(false)} mode={mode} />
       </PhoneFrame>
     </div>
   );

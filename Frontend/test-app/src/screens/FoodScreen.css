@@ -71,3 +71,32 @@
 .miniLabel { color: rgba(255,255,255,0.60); font-size: 12px; margin-top: 2px; }
 
 .hint { margin-top: 12px; color: rgba(255,255,255,0.55); font-size: 13px; }
+
+.mealMacros {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.mealMacro {
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(0,0,0,0.18);
+  border-radius: 12px;
+  padding: 8px 10px;
+  text-align: center;
+}
+
+.mealMacroNum {
+  font-weight: 900;
+  font-size: 13px;
+}
+
+.mealMacroLabel {
+  font-size: 11px;
+  color: rgba(255,255,255,0.60);
+  margin-top: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  font-weight: 700;
+}

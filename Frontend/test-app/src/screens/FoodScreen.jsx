@@ -2,8 +2,24 @@ import "./FoodScreen.css";
 
 export default function FoodScreen() {
   const meals = [
-    { id: 1, name: "Lunch", calories: 400, detail: "Chicken bowl • rice • veggies" },
-    { id: 2, name: "Snack", calories: 220, detail: "Greek yogurt • honey" },
+    {
+      id: 1,
+      name: "Lunch",
+      calories: 400,
+      protein: 32,
+      carbs: 45,
+      fat: 14,
+      detail: "Chicken bowl • rice • veggies",
+    },
+    {
+      id: 2,
+      name: "Snack",
+      calories: 220,
+      protein: 18,
+      carbs: 24,
+      fat: 6,
+      detail: "Greek yogurt • honey",
+    },
   ];
 
   const calories = meals.reduce((sum, meal) => sum + meal.calories, 0);
@@ -64,6 +80,20 @@ export default function FoodScreen() {
               <span className="pill">{meal.calories} kcal</span>
             </div>
             <div className="cardText">{meal.detail}</div>
+            <div className="mealMacros">
+              <div className="mealMacro">
+                <div className="mealMacroNum">{meal.protein}g</div>
+                <div className="mealMacroLabel">protein</div>
+              </div>
+              <div className="mealMacro">
+                <div className="mealMacroNum">{meal.carbs}g</div>
+                <div className="mealMacroLabel">carbs</div>
+              </div>
+              <div className="mealMacro">
+                <div className="mealMacroNum">{meal.fat}g</div>
+                <div className="mealMacroLabel">fat</div>
+              </div>
+            </div>
           </div>
         ))}
       </div>

@@ -136,3 +136,41 @@
   border-color: rgba(251,113,133,0.35);
   background: rgba(251,113,133,0.12);
 }
+
+.fabFood {
+  border-color: rgba(125,211,252,0.45);
+  background: radial-gradient(circle at 30% 30%, rgba(125,211,252,1), rgba(56,189,248,0.75));
+  box-shadow: 0 16px 34px rgba(15,23,42,0.55);
+}
+
+.sheetActions {
+  display: grid;
+  gap: 10px;
+}
+
+.sheetAction {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.04);
+  color: #f2f2f2;
+  text-align: left;
+  font-weight: 900;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sheetAction:active {
+  transform: translateY(1px);
+}
+
+.sheetActionIcon {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+}

@@ -14,12 +14,20 @@ export default function AddSheet({ open, onClose, mode }) {
 
         {mode === "food" ? (
           <>
-            <input className="input" placeholder="Search food (e.g., banana)" />
-            <div className="row">
-              <input className="input" placeholder="Serving (e.g., 100g)" />
-              <input className="input" placeholder="Calories" />
+            <div className="sheetActions">
+              <button className="sheetAction">
+                <span className="sheetActionIcon">🍽️</span>
+                Add meal
+              </button>
+              <button className="sheetAction">
+                <span className="sheetActionIcon">▮▯▮</span>
+                Scan barcode
+              </button>
+              <button className="sheetAction">
+                <span className="sheetActionIcon">📷</span>
+                Photo Log
+              </button>
             </div>
-            <button className="primaryBtn">Add to diary</button>
           </>
         ) : (
           <>

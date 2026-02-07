@@ -30,7 +30,7 @@ export default function App() {
           </main>
 
           <button
-            className="fab"
+            className={`fab ${mode === "food" ? "fabFood" : ""}`}
             onClick={() => {
               if (isWorkoutTab) {
                 window.dispatchEvent(new Event("open-workout-actions"));

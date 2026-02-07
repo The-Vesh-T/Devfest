@@ -1,27 +1,617 @@
-export default function WorkoutsScreen() {
-  return (
-    <div className="screenBody">
-      <h2 className="screenTitle">Workouts</h2>
+import { useState } from "react";
+import "./WorkoutsScreen.css";
 
-      <div className="cardList">
-        <div className="card simple">
-          <div className="cardTop">
-            <div className="cardName">Lower Body</div>
-            <span className="pill">45 min</span>
-          </div>
-          <div className="cardText">Squat • RDL • Lunges</div>
+const MOCK_ROUTINES = [
+  { id: "r1", title: "Lower Body", meta: "5 exercises • ~45 min", description: "Quads, hamstrings, glutes", exercises: ["Squats", "Leg Press", "Leg Curl", "Lunges", "Calf Raises"] },
+  { id: "r2", title: "Upper Body", meta: "6 exercises • ~35 min", description: "Chest, back, shoulders", exercises: ["Bench Press", "Rows", "Pull-ups", "Shoulder Press", "Lateral Raises", "Face Pulls"] },
+  { id: "r3", title: "Push", meta: "4 exercises • ~30 min", description: "Chest and triceps focus", exercises: ["Incline Bench", "Dips", "Push-ups", "Tricep Extension"] },
+];
+
+const DISCOVER_WORKOUTS = [
+  { id: "d1", title: "Full Body", difficulty: "Beginner", duration: "40 min", exercises: 8 },
+  { id: "d2", title: "HIIT Cardio", difficulty: "Advanced", duration: "20 min", exercises: 6 },
+  { id: "d3", title: "Legs & Glutes", difficulty: "Intermediate", duration: "50 min", exercises: 7 },
+  { id: "d4", title: "Core & Abs", difficulty: "Beginner", duration: "25 min", exercises: 5 },
+  { id: "d5", title: "Back & Biceps", difficulty: "Intermediate", duration: "45 min", exercises: 6 },
+  { id: "d6", title: "Mobility & Stretch", difficulty: "Beginner", duration: "30 min", exercises: 10 },
+];
+
+function normalizeTitle(title) {
+  return title.trim().toLowerCase();
+}
+
+function makeExercise(name) {
+  return {
+    id: `ex_${Date.now()}_${Math.random().toString(16).slice(2)}`,
+    name,
+    sets: [],
+  };
+}
+
+function makeSet() {
+  return {
+    id: `set_${Date.now()}_${Math.random().toString(16).slice(2)}`,
+    weight: "",
+    reps: "",
+    failure: false,
+    dropset: false,
+  };
+}
+
+function Section({ title, right }) {
+  return (
+    <div className="wkSection">
+      <div className="wkSectionTop">
+        <div className="wkH2">{title}</div>
+        {right}
+      </div>
+    </div>
+  );
+}
+
+function RowButton({ icon, title, subtitle, onClick }) {
+  return (
+    <button className="wkRowBtn" onClick={onClick}>
+      <div className="wkRowIcon">{icon}</div>
+      <div className="wkRowMain">
+        <div className="wkRowTitle">{title}</div>
+        {subtitle ? <div className="wkRowSub">{subtitle}</div> : null}
+      </div>
+      <div className="wkRowChevron">›</div>
+    </button>
+  );
+}
+
+function Tile({ icon, title, onClick }) {
+  return (
+    <button className="wkTile" onClick={onClick}>
+      <div className="wkTileIcon">{icon}</div>
+      <div className="wkTileText">{title}</div>
+    </button>
+  );
+}
+
+function RoutineCard({ r, onOpen }) {
+  return (
+    <button className="wkRoutine" onClick={() => onOpen(r)}>
+      <div className="wkRoutineTitle">{r.title}</div>
+      <div className="wkRoutineMeta">{r.meta}</div>
+      {r.description && <div className="wkRoutineDesc">{r.description}</div>}
+    </button>
+  );
+}
+
+function DiscoverWorkoutCard({ w, onToggle, alreadyAdded }) {
+  const getDifficultyColor = (difficulty) => {
+    switch(difficulty) {
+      case "Beginner": return "#4ade80";
+      case "Intermediate": return "#fbbf24";
+      case "Advanced": return "#f87171";
+      default: return "#a0aec0";
+    }
+  };
+
+  const actionText = alreadyAdded ? "Remove from Routines" : "+ Add to Routines";
+
+  return (
+    <div
+      className="wkDiscoverCard"
+      role="button"
+      tabIndex={0}
+      onClick={() => onToggle(w)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onToggle(w);
+        }
+      }}
+    >
+      <div className="wkDiscoverTop">
+        <div className="wkDiscoverTitle">{w.title}</div>
+        <span className="wkDiffBadge" style={{ backgroundColor: getDifficultyColor(w.difficulty) }}>
+          {w.difficulty}
+        </span>
+      </div>
+      <div className="wkDiscoverMeta">
+        <span>⏱️ {w.duration}</span>
+        <span>🏋️ {w.exercises} exercises</span>
+      </div>
+      <button
+        className={`wkAddBtn ${alreadyAdded ? "wkAddBtnRemove" : ""}`}
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggle(w);
+        }}
+      >
+        {actionText}
+      </button>
+    </div>
+  );
+}
+
+function CreateRoutineSheet({ open, onClose, onCreate }) {
+  const [title, setTitle] = useState("");
+  const canSave = title.trim().length > 0;
+
+  if (!open) return null;
+
+  return (
+    <div className="wkSheetBackdrop" onClick={onClose} role="presentation">
+      <div className="wkSheet" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+        <div className="wkSheetHandle" />
+        <div className="wkSheetHeader">
+          <button className="wkSheetTextBtn" onClick={onClose}>Cancel</button>
+          <div className="wkSheetTitle">Create Routine</div>
+          <button
+            className="wkSheetPrimaryBtn"
+            disabled={!canSave}
+            onClick={() => {
+              const t = title.trim();
+              if (!t) return;
+              onCreate(t);
+              setTitle("");
+              onClose();
+            }}
+          >
+            Save
+          </button>
         </div>
 
-        <div className="card simple">
-          <div className="cardTop">
-            <div className="cardName">Upper Body</div>
-            <span className="pill">35 min</span>
+        <div className="wkSheetBody">
+          <div className="wkFieldLabel">Routine title</div>
+          <input
+            className="wkInput"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && canSave) {
+                onCreate(title.trim());
+                setTitle("");
+                onClose();
+              }
+            }}
+            placeholder="e.g., Chest & Triceps"
+            autoFocus
+          />
+
+          <div className="wkCreateSectionLabel">Exercises</div>
+          <div className="wkEmpty">
+            <div className="wkEmptyText">
+              No exercises yet
+            </div>
+            <button className="wkAddExerciseBtn">+ Add exercise</button>
           </div>
-          <div className="cardText">Bench • Rows • Curls</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RoutineDetailsSheet({ routine, open, onClose, onAddToWorkout }) {
+  if (!open || !routine) return null;
+
+  return (
+    <div className="wkSheetBackdrop" onClick={onClose} role="presentation">
+      <div className="wkSheet" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+        <div className="wkSheetHandle" />
+        <div className="wkSheetHeader">
+          <button className="wkSheetTextBtn" onClick={onClose}>← Back</button>
+          <div className="wkSheetTitle">{routine.title}</div>
+          <div style={{ width: "60px" }}></div>
+        </div>
+
+        <div className="wkSheetBody">
+          <div className="wkRoutineDetail">
+            <div className="wkDetailMeta">{routine.meta}</div>
+            {routine.description && <div className="wkDetailDesc">{routine.description}</div>}
+            
+            <div className="wkDetailExercisesHeader">Exercises ({routine.exercises?.length || 0})</div>
+            <div className="wkDetailExercises">
+              {routine.exercises?.map((exercise, idx) => (
+                <div key={idx} className="wkDetailExerciseItem">
+                  <span className="wkExerciseNum">{idx + 1}</span>
+                  <span className="wkExerciseName">{exercise}</span>
+                </div>
+              ))}
+            </div>
+
+            <button className="wkStartBtn" onClick={() => {
+              onAddToWorkout(routine);
+              onClose();
+            }}>
+              🚀 Start Workout
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DiscoverWorkoutsSheet({ open, onClose, onToggle, routines }) {
+  if (!open) return null;
+  const existingTitles = new Set(routines.map((r) => normalizeTitle(r.title)));
+
+  return (
+    <div className="wkSheetBackdrop" onClick={onClose} role="presentation">
+      <div className="wkSheet" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+        <div className="wkSheetHandle" />
+        <div className="wkSheetHeader">
+          <button className="wkSheetTextBtn" onClick={onClose}>Close</button>
+          <div className="wkSheetTitle">Discover Workouts</div>
+          <div style={{ width: "60px" }}></div>
+        </div>
+
+        <div className="wkSheetBody">
+          <div className="wkDiscoverGrid">
+            {DISCOVER_WORKOUTS.map((w) => (
+              <DiscoverWorkoutCard
+                key={w.id}
+                w={w}
+                onToggle={onToggle}
+                alreadyAdded={existingTitles.has(normalizeTitle(w.title))}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Active Workout Screen (like Hevy's live workout)
+function ActiveWorkoutScreen({ routine, onClose, onComplete }) {
+  const [exercises, setExercises] = useState(() =>
+    (routine.exercises || []).map((ex) => {
+      if (typeof ex === "string") return makeExercise(ex);
+      if (ex && typeof ex === "object" && ex.name) {
+        return { ...makeExercise(ex.name), sets: Array.isArray(ex.sets) ? ex.sets : [] };
+      }
+      return makeExercise("Exercise");
+    })
+  );
+  const [newExercise, setNewExercise] = useState("");
+
+  const handleAddExercise = () => {
+    if (newExercise.trim()) {
+      setExercises((prev) => [...prev, makeExercise(newExercise.trim())]);
+      setNewExercise("");
+    }
+  };
+
+  const addSet = (exerciseId) => {
+    setExercises((prev) =>
+      prev.map((ex) =>
+        ex.id === exerciseId ? { ...ex, sets: [...ex.sets, makeSet()] } : ex
+      )
+    );
+  };
+
+  const removeExercise = (exerciseId) => {
+    setExercises((prev) => prev.filter((ex) => ex.id !== exerciseId));
+  };
+
+  const removeSet = (exerciseId, setId) => {
+    setExercises((prev) =>
+      prev.map((ex) => {
+        if (ex.id !== exerciseId) return ex;
+        return { ...ex, sets: ex.sets.filter((set) => set.id !== setId) };
+      })
+    );
+  };
+
+  const updateSetField = (exerciseId, setId, field, value) => {
+    setExercises((prev) =>
+      prev.map((ex) => {
+        if (ex.id !== exerciseId) return ex;
+        return {
+          ...ex,
+          sets: ex.sets.map((set) =>
+            set.id === setId ? { ...set, [field]: value } : set
+          ),
+        };
+      })
+    );
+  };
+
+  const totalSets = exercises.reduce((sum, ex) => sum + ex.sets.length, 0);
+  const canComplete = totalSets > 0;
+
+  return (
+    <div className="wkActiveWorkout">
+      <div className="wkWorkoutHero">
+        <div className="wkWorkoutHeader">
+          <button className="wkBackBtn" onClick={onClose}>Cancel</button>
+          <div className="wkWorkoutTitle">{routine.title}</div>
+          <button className="wkCloseBtn" onClick={onClose} aria-label="Close workout">×</button>
+        </div>
+        <div className="wkHeroStats">
+          <div className="wkHeroStat"><span>Exercises</span><b>{exercises.length}</b></div>
+          <div className="wkHeroStat"><span>Sets</span><b>{totalSets}</b></div>
         </div>
       </div>
 
-      <div className="hint">Tap <b>+</b> to add a workout.</div>
+      <div className="wkWorkoutBody">
+        <div className="wkWorkoutMeta">Tap into weight/reps to log each set.</div>
+        <div className="wkExercisesList">
+          {exercises.map((ex) => (
+            <div key={ex.id} className="wkWorkoutExercise">
+              <div className="wkExerciseHeader">
+                <span className="wkExerciseName">{ex.name}</span>
+                <button className="wkRemoveBtn" onClick={() => removeExercise(ex.id)}>×</button>
+              </div>
+
+              <div className="wkSetsList">
+                {ex.sets.map((set, setIdx) => (
+                  <div className="wkSetRow" key={set.id}>
+                    <div className="wkSetNum">{setIdx + 1}</div>
+                    <input
+                      className="wkSetInput"
+                      placeholder="kg"
+                      inputMode="decimal"
+                      value={set.weight}
+                      onChange={(e) => updateSetField(ex.id, set.id, "weight", e.target.value)}
+                    />
+                    <input
+                      className="wkSetInput"
+                      placeholder="reps"
+                      inputMode="numeric"
+                      value={set.reps}
+                      onChange={(e) => updateSetField(ex.id, set.id, "reps", e.target.value)}
+                    />
+                    <button
+                      className={`wkSetChip ${set.failure ? "on" : ""}`}
+                      onClick={() => updateSetField(ex.id, set.id, "failure", !set.failure)}
+                    >
+                      F
+                    </button>
+                    <button
+                      className={`wkSetChip ${set.dropset ? "on" : ""}`}
+                      onClick={() => updateSetField(ex.id, set.id, "dropset", !set.dropset)}
+                    >
+                      D
+                    </button>
+                    <button
+                      className="wkSetDelete"
+                      onClick={() => removeSet(ex.id, set.id)}
+                      aria-label="Remove set"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+                <button className="wkAddSetBtn" onClick={() => addSet(ex.id)}>+ Add set</button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="wkAddExerciseForm">
+          <input
+            className="wkAddExInput"
+            value={newExercise}
+            onChange={(e) => setNewExercise(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleAddExercise()}
+            placeholder="Search or add exercise..."
+            autoFocus
+          />
+          <button className="wkAddExSubmit" onClick={handleAddExercise}>Add</button>
+        </div>
+
+        <button
+          className="wkCompleteBtn"
+          disabled={!canComplete}
+          onClick={() => onComplete({ exerciseCount: exercises.length, setCount: totalSets })}
+        >
+          ✓ Complete Workout
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function WorkoutActionsSheet({ open, onClose, onStartEmpty, onCreateRoutine, onDiscover }) {
+  if (!open) return null;
+
+  return (
+    <div className="wkSheetBackdrop" onClick={onClose} role="presentation">
+      <div className="wkSheet" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+        <div className="wkSheetHandle" />
+        <div className="wkSheetHeader">
+          <button className="wkSheetTextBtn" onClick={onClose}>Close</button>
+          <div className="wkSheetTitle">Quick Actions</div>
+          <div style={{ width: "60px" }}></div>
+        </div>
+        <div className="wkActionList">
+          <button className="wkActionItem" onClick={onStartEmpty}>
+            <div className="wkActionTitle">Start Empty Workout</div>
+            <div className="wkActionSub">Log sets right away</div>
+          </button>
+          <button className="wkActionItem" onClick={onCreateRoutine}>
+            <div className="wkActionTitle">New Routine</div>
+            <div className="wkActionSub">Build and save a workout</div>
+          </button>
+          <button className="wkActionItem" onClick={onDiscover}>
+            <div className="wkActionTitle">Discover Workouts</div>
+            <div className="wkActionSub">Add from templates</div>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function WorkoutCompleteSheet({ open, summary, onDone }) {
+  if (!open || !summary) return null;
+
+  return (
+    <div className="wkSheetBackdrop" role="presentation">
+      <div className="wkSheet wkDoneSheet" role="dialog" aria-modal="true">
+        <div className="wkDoneIcon">✓</div>
+        <div className="wkDoneTitle">Workout Completed</div>
+        <div className="wkDoneMeta">{summary.exerciseCount} exercises • {summary.setCount} sets logged</div>
+        <button className="wkDoneBtn" onClick={onDone}>Done</button>
+      </div>
+    </div>
+  );
+}
+
+export default function WorkoutsScreen() {
+  // This local state makes the screen feel real immediately.
+  const [routines, setRoutines] = useState(MOCK_ROUTINES);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [discoverOpen, setDiscoverOpen] = useState(false);
+  const [selectedRoutine, setSelectedRoutine] = useState(null);
+  const [routineDetailsOpen, setRoutineDetailsOpen] = useState(false);
+  const [activeWorkout, setActiveWorkout] = useState(null);
+  const [completeSummary, setCompleteSummary] = useState(null);
+  const [actionsOpen, setActionsOpen] = useState(false);
+
+  function handleCreate(title) {
+    const normalizedTitle = normalizeTitle(title);
+    const duplicate = routines.find((r) => normalizeTitle(r.title) === normalizedTitle);
+    if (duplicate) {
+      setSelectedRoutine(duplicate);
+      setRoutineDetailsOpen(true);
+      return;
+    }
+
+    setRoutines((prev) => [
+      { id: `r_${Date.now()}`, title, meta: "0 exercises • ~0 min", description: "Custom routine", exercises: [] },
+      ...prev,
+    ]);
+    setCreateOpen(false);
+  }
+
+  function handleOpenRoutine(routine) {
+    setSelectedRoutine(routine);
+    setRoutineDetailsOpen(true);
+  }
+
+  function handleStartEmptyWorkout() {
+    setActiveWorkout({ title: "Quick Workout", exercises: [] });
+    setActionsOpen(false);
+  }
+
+  function handleStartRoutineWorkout(routine) {
+    setActiveWorkout(routine);
+    setRoutineDetailsOpen(false);
+  }
+
+  function handleAddFromDiscover(workout) {
+    const duplicate = routines.find((r) => normalizeTitle(r.title) === normalizeTitle(workout.title));
+    if (duplicate) {
+      setSelectedRoutine(duplicate);
+      setRoutineDetailsOpen(true);
+      return;
+    }
+
+    setRoutines((prev) => [
+      { 
+        id: `r_${Date.now()}`, 
+        title: workout.title, 
+        meta: `${workout.exercises} exercises • ${workout.duration}`,
+        description: workout.difficulty,
+        exercises: Array(workout.exercises).fill(null).map((_, i) => `Exercise ${i + 1}`)
+      },
+      ...prev,
+    ]);
+  }
+
+  function handleToggleDiscoverWorkout(workout) {
+    const normalizedWorkoutTitle = normalizeTitle(workout.title);
+    const exists = routines.find((r) => normalizeTitle(r.title) === normalizedWorkoutTitle);
+    if (exists) {
+      setRoutines((prev) =>
+        prev.filter((r) => normalizeTitle(r.title) !== normalizedWorkoutTitle)
+      );
+      return;
+    }
+    handleAddFromDiscover(workout);
+  }
+
+  // Show active workout screen instead of routine list
+  if (activeWorkout) {
+    return (
+      <ActiveWorkoutScreen
+        routine={activeWorkout}
+        onClose={() => setActiveWorkout(null)}
+        onComplete={(summary) => {
+          setActiveWorkout(null);
+          setCompleteSummary(summary);
+        }}
+      />
+    );
+  }
+
+  return (
+    <div className="screenBody">
+      <div className="wkHeader">
+        <div className="wkTitle">Workouts</div>
+        <button className="wkIconBtn" onClick={() => setActionsOpen(true)} aria-label="Workout actions">
+          +
+        </button>
+      </div>
+
+      <Section title="Quick Start" />
+      <RowButton
+        icon="⚡"
+        title="Start Empty Workout"
+        subtitle="Log sets as you go"
+        onClick={handleStartEmptyWorkout}
+      />
+
+      <Section title="Routines" />
+      <div className="wkTiles">
+        <Tile icon="🗒️" title="New Routine" onClick={() => setCreateOpen(true)} />
+        <Tile icon="🔎" title="Discover More" onClick={() => setDiscoverOpen(true)} />
+      </div>
+
+      <div className="wkList">
+        {routines.map((r) => (
+          <RoutineCard key={r.id} r={r} onOpen={handleOpenRoutine} />
+        ))}
+      </div>
+
+      <CreateRoutineSheet
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onCreate={handleCreate}
+      />
+
+      <RoutineDetailsSheet
+        routine={selectedRoutine}
+        open={routineDetailsOpen}
+        onClose={() => setRoutineDetailsOpen(false)}
+        onAddToWorkout={handleStartRoutineWorkout}
+      />
+
+      <DiscoverWorkoutsSheet
+        open={discoverOpen}
+        onClose={() => setDiscoverOpen(false)}
+        onToggle={handleToggleDiscoverWorkout}
+        routines={routines}
+      />
+
+      <WorkoutCompleteSheet
+        open={Boolean(completeSummary)}
+        summary={completeSummary}
+        onDone={() => setCompleteSummary(null)}
+      />
+
+      <WorkoutActionsSheet
+        open={actionsOpen}
+        onClose={() => setActionsOpen(false)}
+        onStartEmpty={handleStartEmptyWorkout}
+        onCreateRoutine={() => {
+          setActionsOpen(false);
+          setCreateOpen(true);
+        }}
+        onDiscover={() => {
+          setActionsOpen(false);
+          setDiscoverOpen(true);
+        }}
+      />
     </div>
   );
 }

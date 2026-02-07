@@ -7,9 +7,12 @@ const quickActions = [
   { id: 3, label: "Check In", icon: "✅" },
 ];
 
-const todayFocus = [
-  { id: 1, title: "Lower Body", meta: "45 min • Strength", detail: "Squat • RDL • Lunges" },
-  { id: 2, title: "Steps", meta: "6,200 / 10,000", detail: "Easy walk after lunch" },
+const workoutSets = [
+  { id: 1, name: "Warm-up", status: "done" },
+  { id: 2, name: "Set 1", status: "done" },
+  { id: 3, name: "Set 2", status: "current" },
+  { id: 4, name: "Set 3", status: "pending" },
+  { id: 5, name: "Cool-down", status: "pending" },
 ];
 
 const feed = [
@@ -29,8 +32,14 @@ export default function HomeScreen() {
     return () => clearInterval(id);
   }, []);
 
-  const focusCard = (id) => setFocusedId(id);
+  const focusCard = (id) => setFocusedId((prev) => (prev === id ? null : id));
   const clearFocus = () => setFocusedId(null);
+
+  const steps = { current: 6200, goal: 10000 };
+  const stepsComplete = steps.current >= steps.goal;
+  const macrosComplete = false;
+  const microsComplete = true;
+  const workoutStatus = "in_progress"; // in_progress | complete
 
   return (
     <div className="screenBody">
@@ -51,6 +60,14 @@ export default function HomeScreen() {
             <div className="heroLabel">Today</div>
             <div className="heroValue">1,640 kcal</div>
             <div className="heroSub">72g protein • 6.2k steps</div>
+            <div className="macroRow">
+              <span className={`macroBadge ${macrosComplete ? "ok" : "miss"}`}>
+                Macro {macrosComplete ? "Complete" : "Missing"}
+              </span>
+              <span className={`macroBadge ${microsComplete ? "ok" : "miss"}`}>
+                Micro {microsComplete ? "Complete" : "Missing"}
+              </span>
+            </div>
           </div>
           <div className="progressRing" aria-label="Daily goal progress">
             <div className="progressInner">
@@ -91,15 +108,42 @@ export default function HomeScreen() {
 
       <div className="sectionTitle">Today’s focus</div>
       <div className="cardList">
-        {todayFocus.map((item) => (
-          <div key={item.id} className="card simple focusCard">
-            <div className="cardTop">
-              <div className="cardName">{item.title}</div>
-              <span className="pill">{item.meta}</span>
-            </div>
-            <div className="cardText">{item.detail}</div>
+        <div className={`card simple focusCard ${stepsComplete ? "done" : "pending"}`}>
+          <div className="cardTop">
+            <div className="cardName">Steps</div>
+            <span className={`pill ${stepsComplete ? "pillComplete" : "pillPending"}`}>
+              {stepsComplete ? "Complete" : "In progress"}
+            </span>
           </div>
-        ))}
+          <div className="cardText">
+            {steps.current.toLocaleString()} / {steps.goal.toLocaleString()} steps
+          </div>
+        </div>
+
+        <div className="card simple focusCard">
+          <div className="cardTop">
+            <div className="cardName">Workout</div>
+            <span className={`pill ${workoutStatus === "complete" ? "pillComplete" : "pillPending"}`}>
+              {workoutStatus === "complete" ? "Complete" : "In progress"}
+            </span>
+          </div>
+          {workoutStatus === "complete" ? (
+            <div className="cardText workoutCongrats">Nice work — workout finished.</div>
+          ) : (
+            <>
+              <div className="cardText workoutMeta">Current: Set 2</div>
+              <div className="setList">
+                {workoutSets.map((set) => (
+                  <div key={set.id} className={`setRow ${set.status}`}>
+                    <span className="setDot" />
+                    <span className="setName">{set.name}</span>
+                    {set.status === "current" && <span className="setNow">now</span>}
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="sectionTitle">Friends</div>
@@ -108,23 +152,7 @@ export default function HomeScreen() {
           <div
             key={p.id}
             className={`card feedCard ${focusedId === p.id ? "focused" : ""}`}
-            onContextMenu={(e) => {
-              e.preventDefault();
-              focusCard(p.id);
-            }}
-            onPointerDown={(e) => {
-              if (e.pointerType === "mouse" && e.button !== 0) return;
-              const t = setTimeout(() => focusCard(p.id), 420);
-              const cancel = () => {
-                clearTimeout(t);
-                window.removeEventListener("pointerup", cancel);
-                window.removeEventListener("pointercancel", cancel);
-                window.removeEventListener("pointermove", cancel);
-              };
-              window.addEventListener("pointerup", cancel, { once: true });
-              window.addEventListener("pointercancel", cancel, { once: true });
-              window.addEventListener("pointermove", cancel, { once: true });
-            }}
+            onClick={() => focusCard(p.id)}
           >
             <div className="avatar">{p.name[0]}</div>
 

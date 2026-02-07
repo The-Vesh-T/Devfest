@@ -1,7 +1,41 @@
+import "./FoodScreen.css";
+
 export default function FoodScreen() {
+  const meals = [
+    { id: 1, name: "Lunch", calories: 400, detail: "Chicken bowl • rice • veggies" },
+    { id: 2, name: "Snack", calories: 220, detail: "Greek yogurt • honey" },
+  ];
+
+  const calories = meals.reduce((sum, meal) => sum + meal.calories, 0);
+  const goal = 1800;
+  const remaining = Math.max(goal - calories, 0);
+  const pct = Math.min(calories / goal, 1);
+  const radius = 54;
+  const circumference = 2 * Math.PI * radius;
+  const dashOffset = circumference * (1 - pct);
+
   return (
     <div className="screenBody">
       <h2 className="screenTitle">Food</h2>
+
+      <div className="calRing">
+        <svg className="calRingSvg" viewBox="0 0 140 140" role="img" aria-label={`${calories} calories eaten`}>
+          <circle className="calRingTrack" cx="70" cy="70" r={radius} />
+          <circle
+            className="calRingProgress"
+            cx="70"
+            cy="70"
+            r={radius}
+            strokeDasharray={circumference}
+            strokeDashoffset={dashOffset}
+          />
+        </svg>
+        <div className="calRingCenter">
+          <div className="calRingNum">{calories.toLocaleString()}</div>
+          <div className="calRingLabel">kcal eaten</div>
+          <div className="calRingSub">{remaining.toLocaleString()} kcal left</div>
+        </div>
+      </div>
 
       <div className="summaryRow">
         <div className="miniStat">
@@ -23,21 +57,15 @@ export default function FoodScreen() {
       </div>
 
       <div className="cardList">
-        <div className="card simple">
-          <div className="cardTop">
-            <div className="cardName">Lunch</div>
-            <span className="pill">400 kcal</span>
+        {meals.map((meal) => (
+          <div key={meal.id} className="card simple">
+            <div className="cardTop">
+              <div className="cardName">{meal.name}</div>
+              <span className="pill">{meal.calories} kcal</span>
+            </div>
+            <div className="cardText">{meal.detail}</div>
           </div>
-          <div className="cardText">Chicken bowl • rice • veggies</div>
-        </div>
-
-        <div className="card simple">
-          <div className="cardTop">
-            <div className="cardName">Snack</div>
-            <span className="pill">220 kcal</span>
-          </div>
-          <div className="cardText">Greek yogurt • honey</div>
-        </div>
+        ))}
       </div>
 
       <div className="hint">Tap <b>+</b> to add food.</div>

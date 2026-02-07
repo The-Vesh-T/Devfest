@@ -3,7 +3,7 @@ Devfest project
 
 GITHUB GUIDE
 GET REPO
-git clone [https://github.com/user/repo.git](https://github.com/The-Vesh-T/Devfest/edit/main/)
+git clone https://github.com/The-Vesh-T/Devfest.git
 cd repo
 
 CHECK PROGRESS

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import "../HomeScreen.css";
 
 const quickActions = [
@@ -22,7 +22,6 @@ const feed = [
 ];
 
 export default function HomeScreen() {
-  const [showPercent, setShowPercent] = useState(true);
   const [focusedId, setFocusedId] = useState(null);
   const [replyId, setReplyId] = useState(null);
   const [pulse, setPulse] = useState({ like: null, save: null });
@@ -30,13 +29,6 @@ export default function HomeScreen() {
   const [replyDrafts, setReplyDrafts] = useState({});
   const [repliesById, setRepliesById] = useState({});
   const [expandedReplies, setExpandedReplies] = useState({});
-
-  useEffect(() => {
-    const id = setInterval(() => {
-      setShowPercent((s) => !s);
-    }, 2200);
-    return () => clearInterval(id);
-  }, []);
 
   const focusCard = (id) => setFocusedId((prev) => (prev === id ? null : id));
   const clearFocus = () => {
@@ -69,8 +61,6 @@ export default function HomeScreen() {
 
   const steps = { current: 10500, goal: 10000 };
   const stepsComplete = steps.current >= steps.goal;
-  const macrosComplete = false;
-  const microsComplete = true;
   const workoutStatus = "in_progress"; // in_progress | complete
 
   return (
@@ -86,42 +76,39 @@ export default function HomeScreen() {
         </div>
       </div>
 
-      <div className="heroCard">
-        <div className="heroTop">
+      <div className="heroCard calendarCard">
+        <div className="calendarHeader">
           <div>
-            <div className="heroLabel">Today</div>
-            <div className="heroValue">1,640 kcal</div>
-            <div className="heroSub">72g protein • 10.5k steps</div>
-            <div className="macroRow">
-              <span className={`macroBadge ${macrosComplete ? "ok" : "miss"}`}>
-                Macro {macrosComplete ? "Complete" : "Missing"}
-              </span>
-              <span className={`macroBadge ${microsComplete ? "ok" : "miss"}`}>
-                Micro {microsComplete ? "Complete" : "Missing"}
-              </span>
-            </div>
+            <div className="heroLabel">Weekly Progress</div>
+            <div className="calendarTitle">This Week</div>
           </div>
-          <div className="progressRing" aria-label="Daily goal progress">
-            <div className="progressInner">
-              <div className="progressValue">{showPercent ? "68%" : "520"}</div>
-              <div className="progressLabel">{showPercent ? "goal" : "kcal left"}</div>
-            </div>
+          <div className="calendarLegend">
+            <span className="legendItem">
+              <span className="legendDot green" /> Complete
+            </span>
+            <span className="legendItem">
+              <span className="legendDot yellow" /> Partial
+            </span>
+            <span className="legendItem">
+              <span className="legendDot red" /> Lacking
+            </span>
           </div>
         </div>
 
-        <div className="heroGrid">
-          <div className="heroStat">
-            <div className="heroStatNum">45</div>
-            <div className="heroStatLabel">mins trained</div>
-          </div>
-          <div className="heroStat">
-            <div className="heroStatNum">7.8h</div>
-            <div className="heroStatLabel">sleep</div>
-          </div>
-          <div className="heroStat">
-            <div className="heroStatNum">3</div>
-            <div className="heroStatLabel">friends active</div>
-          </div>
+        <div className="calendarGrid weekly" aria-label="Weekly progress calendar">
+          {[
+            { label: "Mon", status: "green" },
+            { label: "Tue", status: "yellow" },
+            { label: "Wed", status: "red" },
+            { label: "Thu", status: "green" },
+            { label: "Fri", status: "yellow" },
+            { label: "Sat", status: "green" },
+            { label: "Sun", status: "yellow" },
+          ].map((d, i) => (
+            <div key={`day-${i}`} className={`dayCell ${d.status}`} aria-label={d.label}>
+              <span className="dayNum">{d.label}</span>
+            </div>
+          ))}
         </div>
       </div>
 

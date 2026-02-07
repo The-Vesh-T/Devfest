@@ -11,11 +11,10 @@ import FoodScreen from "./screens/FoodScreen";
 import WorkoutsScreen from "./screens/WorkoutsScreen";
 
 export default function App() {
-  const [tab, setTab] = useState("home"); // home | food | workouts
+  const [tab, setTab] = useState("home"); 
   const [sheetOpen, setSheetOpen] = useState(false);
-  const isWorkoutTab = tab === "workouts";
 
-  const mode = isWorkoutTab ? "workout" : "food";
+  const mode = tab === "workouts" ? "workout" : "food";
 
   return (
     <div className="stage">
@@ -29,21 +28,9 @@ export default function App() {
             {tab === "workouts" && <WorkoutsScreen />}
           </main>
 
-          {tab !== "home" && (
-            <button
-              className="fab"
-              onClick={() => {
-                if (isWorkoutTab) {
-                  window.dispatchEvent(new Event("open-workout-actions"));
-                  return;
-                }
-                setSheetOpen(true);
-              }}
-              aria-label="Add"
-            >
-              +
-            </button>
-          )}
+          <button className="fab" onClick={() => setSheetOpen(true)} aria-label="Add">
+            +
+          </button>
 
           <BottomNav tab={tab} setTab={setTab} />
         </div>

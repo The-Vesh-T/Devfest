@@ -10,9 +10,7 @@ export default function FoodScreen({ meals }) {
   const dashOffset = circumference * (1 - pct);
 
   return (
-    <div className="screenBody">
-      <h2 className="screenTitle">Food</h2>
-
+    <div className="screenBody foodScreenBody">
       <div className="calRing">
         <svg className="calRingSvg" viewBox="0 0 140 140" role="img" aria-label={`${calories} calories eaten`}>
           <circle className="calRingTrack" cx="70" cy="70" r={radius} />

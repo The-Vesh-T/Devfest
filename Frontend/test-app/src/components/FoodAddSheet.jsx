@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import "./AddSheet.css";
+import "./FoodAddSheet.css";
 
-export default function AddSheet({ open, onClose, mode, onCreateFood, customFoods, onToggleFavorite }) {
+export default function FoodAddSheet({ open, onClose, mode, onCreateFood, customFoods, onToggleFavorite }) {
   const [foodView, setFoodView] = useState("root"); // root | add-meal
   const [mealTab, setMealTab] = useState("all"); // all | favorites | custom
   const [showCustomForm, setShowCustomForm] = useState(false);

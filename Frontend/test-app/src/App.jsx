@@ -4,7 +4,8 @@ import "./App.css";
 import PhoneFrame from "./components/PhoneFrame";
 import TopBar from "./components/TopBar";
 import BottomNav from "./components/BottomNav";
-import AddSheet from "./components/AddSheet";
+import FoodAddSheet from "./components/FoodAddSheet";
+import DaySelector from "./components/DaySelector";
 
 import HomeScreen from "./screens/HomeScreen";
 import FoodScreen from "./screens/FoodScreen";
@@ -14,6 +15,7 @@ export default function App() {
   const [tab, setTab] = useState("home"); // home | food | workouts
   const [sheetOpen, setSheetOpen] = useState(false);
   const [customFoods, setCustomFoods] = useState([]);
+  const [activeDay, setActiveDay] = useState(() => new Date().getDay());
   const isWorkoutTab = tab === "workouts";
 
   const mode = isWorkoutTab ? "workout" : "food";
@@ -52,13 +54,18 @@ export default function App() {
     );
   };
 
+  const prevDay = () => setActiveDay((idx) => (idx - 1 + 7) % 7);
+  const nextDay = () => setActiveDay((idx) => (idx + 1) % 7);
+
   return (
     <div className="stage">
       <PhoneFrame>
         <div className="app">
-          <TopBar title="Valetudo" />
+          <TopBar title="Valetudo" withDay={tab === "food"}>
+            {tab === "food" ? <DaySelector activeDay={activeDay} onPrev={prevDay} onNext={nextDay} /> : null}
+          </TopBar>
 
-          <main className="content">
+          <main className={`content ${tab === "food" ? "foodContent" : ""}`}>
             {tab === "home" && <HomeScreen />}
             {tab === "food" && <FoodScreen meals={meals} />}
             {tab === "workouts" && <WorkoutsScreen />}
@@ -81,7 +88,7 @@ export default function App() {
           <BottomNav tab={tab} setTab={setTab} />
         </div>
 
-        <AddSheet
+        <FoodAddSheet
           open={sheetOpen}
           onClose={() => setSheetOpen(false)}
           mode={mode}

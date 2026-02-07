@@ -1,0 +1,276 @@
+.sheetActions {
+  display: grid;
+  gap: 10px;
+}
+
+.sheetAction {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.04);
+  color: #f2f2f2;
+  text-align: left;
+  font-weight: 900;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sheetAction:active {
+  transform: translateY(1px);
+}
+
+.sheetActionIcon {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+}
+
+.sheetPage {
+  display: grid;
+  gap: 10px;
+}
+
+.foodPageBackdrop {
+  align-items: stretch;
+}
+
+.foodAddPage {
+  height: 100%;
+  border-radius: 0;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  position: relative;
+}
+
+.foodAddPage .sheetHeader {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  margin: 0;
+  padding: 0;
+  justify-content: flex-end;
+}
+
+.foodAddPage .sheetTitle {
+  display: none;
+}
+
+.foodAddBody {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 12px;
+  padding-top: 44px;
+}
+
+.mealTabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  padding-bottom: 10px;
+}
+
+.mealTab {
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.04);
+  color: rgba(255,255,255,0.75);
+  border-radius: 999px;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.mealTab.active {
+  background: rgba(125,211,252,0.18);
+  border-color: rgba(125,211,252,0.35);
+  color: #e9f7ff;
+}
+
+.mealTab.custom.active {
+  background: rgba(255,255,255,0.04);
+  border-color: rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.75);
+}
+
+.mealTabPanel {
+  display: grid;
+  gap: 10px;
+}
+
+.xBtn {
+  border-color: rgba(248,113,113,0.45);
+  background: rgba(248,113,113,0.12);
+  color: #fecaca;
+}
+
+.customMealForm {
+  display: grid;
+  gap: 8px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.04);
+  border-radius: 16px;
+  padding: 10px;
+  align-content: start;
+}
+
+.customMealForm .sheetOptionTitle {
+  margin-bottom: 0;
+}
+
+.customMealForm .sheetOptionSub {
+  margin-top: -4px;
+  margin-bottom: 4px;
+}
+
+.customMealForm .input {
+  margin-bottom: 0;
+  padding: 10px;
+  font-size: 13px;
+}
+
+.customMealForm .row {
+  gap: 8px;
+}
+
+.customMealForm .primaryBtn {
+  margin-top: 4px;
+}
+
+.customHeader {
+  display: flex;
+  justify-content: center;
+  position: relative;
+}
+
+.smallBtn {
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.06);
+  color: #f2f2f2;
+  border-radius: 12px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  height: 34px;
+  width: 100%;
+  max-width: 360px;
+  justify-content: center;
+}
+
+.smallBtnPrimary {
+  border-color: rgba(125,211,252,0.55);
+  background: rgba(125,211,252,0.22);
+  color: #e9f7ff;
+}
+
+.backBtn {
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.04);
+  color: rgba(255,255,255,0.85);
+  border-radius: 12px;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  font-size: 16px;
+  font-weight: 900;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.customHeader.backOnly {
+  justify-content: flex-start;
+  position: absolute;
+  left: 12px;
+  top: 10px;
+}
+
+.customStack {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  justify-items: center;
+  height: 100%;
+  grid-template-rows: 1fr auto;
+}
+
+.customStack .sheetOption,
+.customStack .customMealForm {
+  width: 100%;
+  max-width: 360px;
+}
+
+.customList {
+  width: 100%;
+  max-width: 360px;
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  overflow: auto;
+  padding-bottom: 8px;
+}
+
+.rowBetween {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.starBtn {
+  border: none;
+  background: transparent;
+  color: #fbbf24;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  line-height: 1;
+  padding: 0;
+  text-align: center;
+  cursor: pointer;
+}
+
+.starBtn.active {
+  color: #f59e0b;
+}
+
+.customFooter {
+  width: 100%;
+  display: grid;
+  justify-items: center;
+  padding: 8px 0 2px;
+  position: sticky;
+  bottom: 0;
+  background: linear-gradient(180deg, rgba(18,21,27,0) 0%, rgba(18,21,27,0.85) 35%, rgba(18,21,27,0.95) 100%);
+}
+
+.sheetOption {
+  text-align: left;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.04);
+  color: #f2f2f2;
+  padding: 12px 14px;
+  cursor: pointer;
+}
+
+.sheetOptionTitle {
+  font-weight: 950;
+  margin-bottom: 2px;
+}
+
+.sheetOptionSub {
+  font-size: 12px;
+  color: rgba(255,255,255,0.65);
+}

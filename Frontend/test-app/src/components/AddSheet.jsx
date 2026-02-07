@@ -100,7 +100,7 @@ export default function AddSheet({ open, onClose, mode, onCreateFood, customFood
                     Favorite meals
                   </button>
                   <button
-                    className={`mealTab ${mealTab === "custom" ? "active" : ""}`}
+                    className={`mealTab custom ${mealTab === "custom" ? "active" : ""}`}
                     onClick={() => setMealTab("custom")}
                     role="tab"
                     aria-selected={mealTab === "custom"}
@@ -118,43 +118,75 @@ export default function AddSheet({ open, onClose, mode, onCreateFood, customFood
                     </div>
                   )}
                   {mealTab === "favorites" && (
-                    <div className="sheetOption">
+                    <div className="customList">
                       <div className="sheetOptionTitle">Favorite meals</div>
-                      <div className="sheetOptionSub">Your saved go-to meals</div>
+                      {customFoods && customFoods.some((food) => food.favorite) ? (
+                        customFoods
+                          .filter((food) => food.favorite)
+                          .map((food) => (
+                            <div key={food.id} className="sheetOption rowBetween">
+                              <div>
+                                <div className="sheetOptionTitle">{food.name}</div>
+                                <div className="sheetOptionSub">{food.detail}</div>
+                              </div>
+                              <button
+                                className={`starBtn ${food.favorite ? "active" : ""}`}
+                                onClick={() => onToggleFavorite?.(food.id)}
+                                aria-label="Toggle favorite"
+                              >
+                                {food.favorite ? "★" : "☆"}
+                              </button>
+                            </div>
+                          ))
+                      ) : (
+                        <div className="sheetOption">
+                          <div className="sheetOptionSub">No favorites yet.</div>
+                        </div>
+                      )}
                     </div>
                   )}
                   {mealTab === "custom" && (
                     <div className="customStack">
-                      {!showCustomForm ? (
-                        <div className="customHeader">
-                          <button className="smallBtn" onClick={() => setShowCustomForm(true)}>
-                            Create food
-                          </button>
-                        </div>
-                      ) : (
+                      {showCustomForm ? (
                         <div className="customHeader backOnly">
                           <button className="backBtn" onClick={() => setShowCustomForm(false)} aria-label="Back">
                             ←
                           </button>
                         </div>
-                      )}
+                      ) : null}
 
                       {!showCustomForm ? (
-                        <div className="customList">
-                          <div className="sheetOptionTitle">Custom foods</div>
-                          {customFoods && customFoods.length > 0 ? (
-                            customFoods.map((food) => (
-                              <div key={food.id} className="sheetOption">
-                                <div className="sheetOptionTitle">{food.name}</div>
-                                <div className="sheetOptionSub">{food.detail}</div>
+                        <>
+                          <div className="customList">
+                            <div className="sheetOptionTitle">Custom foods</div>
+                            {customFoods && customFoods.length > 0 ? (
+                              customFoods.map((food) => (
+                                <div key={food.id} className="sheetOption rowBetween">
+                                  <div>
+                                    <div className="sheetOptionTitle">{food.name}</div>
+                                    <div className="sheetOptionSub">{food.detail}</div>
+                                  </div>
+                                  <button
+                                    className={`starBtn ${food.favorite ? "active" : ""}`}
+                                    onClick={() => onToggleFavorite?.(food.id)}
+                                    aria-label="Toggle favorite"
+                                  >
+                                    {food.favorite ? "★" : "☆"}
+                                  </button>
+                                </div>
+                              ))
+                            ) : (
+                              <div className="sheetOption">
+                                <div className="sheetOptionSub">No custom foods yet.</div>
                               </div>
-                            ))
-                          ) : (
-                            <div className="sheetOption">
-                              <div className="sheetOptionSub">No custom foods yet.</div>
-                            </div>
-                          )}
-                        </div>
+                            )}
+                          </div>
+                          <div className="customFooter">
+                            <button className="smallBtn smallBtnPrimary" onClick={() => setShowCustomForm(true)}>
+                              Create food
+                            </button>
+                          </div>
+                        </>
                       ) : (
                         <div className="customMealForm">
                           <div className="sheetOptionTitle">Create a food</div>

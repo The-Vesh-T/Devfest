@@ -16,6 +16,25 @@ const DISCOVER_WORKOUTS = [
   { id: "d6", title: "Mobility & Stretch", difficulty: "Beginner", duration: "30 min", exercises: 10 },
 ];
 
+const ROUTINES_STORAGE_KEY = "workouts_routines_v1";
+
+function loadSavedRoutines() {
+  if (typeof window === "undefined") return MOCK_ROUTINES;
+  try {
+    const raw = window.localStorage.getItem(ROUTINES_STORAGE_KEY);
+    if (!raw) return MOCK_ROUTINES;
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : MOCK_ROUTINES;
+  } catch {
+    return MOCK_ROUTINES;
+  }
+}
+
+function saveRoutines(routines) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(ROUTINES_STORAGE_KEY, JSON.stringify(routines));
+}
+
 function normalizeTitle(title) {
   return title.trim().toLowerCase();
 }
@@ -85,21 +104,22 @@ function RoutineCard({ r, onOpen, onRemove }) {
         }
       }}
     >
-      <div className="wkRoutineTop">
+      <div className="wkRoutineMain">
         <div className="wkRoutineTitle">{r.title}</div>
-        <button
-          className="wkRoutineRemove"
-          aria-label={`Remove ${r.title}`}
-          onClick={(e) => {
-            e.stopPropagation();
-            onRemove(r.id);
-          }}
-        >
-          ×
-        </button>
+        <div className="wkRoutineMeta">{r.meta}</div>
+        {r.description && <div className="wkRoutineDesc">{r.description}</div>}
+        <div className="wkRoutineOpenHint">Open routine ›</div>
       </div>
-      <div className="wkRoutineMeta">{r.meta}</div>
-      {r.description && <div className="wkRoutineDesc">{r.description}</div>}
+      <button
+        className="wkRoutineRemove"
+        aria-label={`Remove ${r.title}`}
+        onClick={(e) => {
+          e.stopPropagation();
+          onRemove(r.id);
+        }}
+      >
+        ×
+      </button>
     </div>
   );
 }
@@ -447,16 +467,28 @@ function WorkoutActionsSheet({ open, onClose, onStartEmpty, onCreateRoutine, onD
         </div>
         <div className="wkActionList">
           <button className="wkActionItem" onClick={onStartEmpty}>
-            <div className="wkActionTitle">Start Empty Workout</div>
-            <div className="wkActionSub">Log sets right away</div>
+            <div className="wkActionIcon">⚡</div>
+            <div className="wkActionContent">
+              <div className="wkActionTitle">Start Empty Workout</div>
+              <div className="wkActionSub">Log sets right away</div>
+            </div>
+            <div className="wkActionChevron">›</div>
           </button>
           <button className="wkActionItem" onClick={onCreateRoutine}>
-            <div className="wkActionTitle">New Routine</div>
-            <div className="wkActionSub">Build and save a workout</div>
+            <div className="wkActionIcon">🗒️</div>
+            <div className="wkActionContent">
+              <div className="wkActionTitle">New Routine</div>
+              <div className="wkActionSub">Build and save a workout</div>
+            </div>
+            <div className="wkActionChevron">›</div>
           </button>
           <button className="wkActionItem" onClick={onDiscover}>
-            <div className="wkActionTitle">Discover Workouts</div>
-            <div className="wkActionSub">Add from templates</div>
+            <div className="wkActionIcon">🔎</div>
+            <div className="wkActionContent">
+              <div className="wkActionTitle">Discover Workouts</div>
+              <div className="wkActionSub">Add from templates</div>
+            </div>
+            <div className="wkActionChevron">›</div>
           </button>
         </div>
       </div>
@@ -481,7 +513,7 @@ function WorkoutCompleteSheet({ open, summary, onDone }) {
 
 export default function WorkoutsScreen() {
   // This local state makes the screen feel real immediately.
-  const [routines, setRoutines] = useState(MOCK_ROUTINES);
+  const [routines, setRoutines] = useState(loadSavedRoutines);
   const [createOpen, setCreateOpen] = useState(false);
   const [discoverOpen, setDiscoverOpen] = useState(false);
   const [selectedRoutine, setSelectedRoutine] = useState(null);
@@ -496,6 +528,14 @@ export default function WorkoutsScreen() {
     return () => window.removeEventListener("open-workout-actions", handleOpenActions);
   }, []);
 
+  function updateRoutines(updater) {
+    setRoutines((prev) => {
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      saveRoutines(next);
+      return next;
+    });
+  }
+
   function handleCreate(title) {
     const normalizedTitle = normalizeTitle(title);
     const duplicate = routines.find((r) => normalizeTitle(r.title) === normalizedTitle);
@@ -505,7 +545,7 @@ export default function WorkoutsScreen() {
       return;
     }
 
-    setRoutines((prev) => [
+    updateRoutines((prev) => [
       { id: `r_${Date.now()}`, title, meta: "0 exercises • ~0 min", description: "Custom routine", exercises: [] },
       ...prev,
     ]);
@@ -535,7 +575,7 @@ export default function WorkoutsScreen() {
       return;
     }
 
-    setRoutines((prev) => [
+    updateRoutines((prev) => [
       { 
         id: `r_${Date.now()}`, 
         title: workout.title, 
@@ -551,7 +591,7 @@ export default function WorkoutsScreen() {
     const normalizedWorkoutTitle = normalizeTitle(workout.title);
     const exists = routines.find((r) => normalizeTitle(r.title) === normalizedWorkoutTitle);
     if (exists) {
-      setRoutines((prev) =>
+      updateRoutines((prev) =>
         prev.filter((r) => normalizeTitle(r.title) !== normalizedWorkoutTitle)
       );
       return;
@@ -560,7 +600,7 @@ export default function WorkoutsScreen() {
   }
 
   function handleRemoveRoutine(routineId) {
-    setRoutines((prev) => prev.filter((r) => r.id !== routineId));
+    updateRoutines((prev) => prev.filter((r) => r.id !== routineId));
     if (selectedRoutine?.id === routineId) {
       setRoutineDetailsOpen(false);
       setSelectedRoutine(null);

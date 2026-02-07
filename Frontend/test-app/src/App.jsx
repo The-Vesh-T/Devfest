@@ -13,8 +13,9 @@ import WorkoutsScreen from "./screens/WorkoutsScreen";
 export default function App() {
   const [tab, setTab] = useState("home"); // home | food | workouts
   const [sheetOpen, setSheetOpen] = useState(false);
+  const isWorkoutTab = tab === "workouts";
 
-  const mode = tab === "workouts" ? "workout" : "food";
+  const mode = isWorkoutTab ? "workout" : "food";
 
   return (
     <div className="stage">
@@ -28,7 +29,17 @@ export default function App() {
             {tab === "workouts" && <WorkoutsScreen />}
           </main>
 
-          <button className="fab" onClick={() => setSheetOpen(true)} aria-label="Add">
+          <button
+            className="fab"
+            onClick={() => {
+              if (isWorkoutTab) {
+                window.dispatchEvent(new Event("open-workout-actions"));
+                return;
+              }
+              setSheetOpen(true);
+            }}
+            aria-label="Add"
+          >
             +
           </button>
 

@@ -1,9 +1,14 @@
 /* ===== Workouts (Hevy-ish, dark) ===== */
+.wkScreenBody{
+  padding: 0 14px 0;
+  margin-top: -6px;
+}
+
 .wkHeader{
   display:flex;
   align-items:center;
-  justify-content: space-between;
-  margin: 6px 2px 10px;
+  justify-content: flex-start;
+  margin: 0 2px 10px;
 }
 
 .wkTitle{
@@ -30,7 +35,7 @@
   display:flex;
   align-items:baseline;
   justify-content: space-between;
-  margin: 14px 2px 8px;
+  margin: 12px 2px 8px;
 }
 
 .wkH2{
@@ -120,9 +125,30 @@
   cursor:pointer;
 }
 
+.wkRoutineTop{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
 .wkRoutineTitle{ font-weight: 950; font-size: 16px; }
 .wkRoutineMeta{ margin-top: 4px; color: rgba(255,255,255,0.58); font-size: 13px; }
 .wkRoutineDesc{ margin-top: 6px; color: rgba(255,255,255,0.48); font-size: 12px; }
+
+.wkRoutineRemove{
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  border: 1px solid rgba(239,68,68,0.35);
+  background: rgba(239,68,68,0.16);
+  color: rgba(248,113,113,0.95);
+  font-size: 18px;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
 
 /* ===== Discover Workouts Sheet ===== */
 .wkDiscoverGrid{

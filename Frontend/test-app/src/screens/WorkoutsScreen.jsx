@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "./WorkoutsScreen.css";
 
 const MOCK_ROUTINES = [
@@ -71,13 +71,36 @@ function Tile({ icon, title, onClick }) {
   );
 }
 
-function RoutineCard({ r, onOpen }) {
+function RoutineCard({ r, onOpen, onRemove }) {
   return (
-    <button className="wkRoutine" onClick={() => onOpen(r)}>
-      <div className="wkRoutineTitle">{r.title}</div>
+    <div
+      className="wkRoutine"
+      role="button"
+      tabIndex={0}
+      onClick={() => onOpen(r)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onOpen(r);
+        }
+      }}
+    >
+      <div className="wkRoutineTop">
+        <div className="wkRoutineTitle">{r.title}</div>
+        <button
+          className="wkRoutineRemove"
+          aria-label={`Remove ${r.title}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            onRemove(r.id);
+          }}
+        >
+          ×
+        </button>
+      </div>
       <div className="wkRoutineMeta">{r.meta}</div>
       {r.description && <div className="wkRoutineDesc">{r.description}</div>}
-    </button>
+    </div>
   );
 }
 
@@ -467,6 +490,12 @@ export default function WorkoutsScreen() {
   const [completeSummary, setCompleteSummary] = useState(null);
   const [actionsOpen, setActionsOpen] = useState(false);
 
+  useEffect(() => {
+    const handleOpenActions = () => setActionsOpen(true);
+    window.addEventListener("open-workout-actions", handleOpenActions);
+    return () => window.removeEventListener("open-workout-actions", handleOpenActions);
+  }, []);
+
   function handleCreate(title) {
     const normalizedTitle = normalizeTitle(title);
     const duplicate = routines.find((r) => normalizeTitle(r.title) === normalizedTitle);
@@ -530,6 +559,14 @@ export default function WorkoutsScreen() {
     handleAddFromDiscover(workout);
   }
 
+  function handleRemoveRoutine(routineId) {
+    setRoutines((prev) => prev.filter((r) => r.id !== routineId));
+    if (selectedRoutine?.id === routineId) {
+      setRoutineDetailsOpen(false);
+      setSelectedRoutine(null);
+    }
+  }
+
   // Show active workout screen instead of routine list
   if (activeWorkout) {
     return (
@@ -545,12 +582,9 @@ export default function WorkoutsScreen() {
   }
 
   return (
-    <div className="screenBody">
+    <div className="screenBody wkScreenBody">
       <div className="wkHeader">
         <div className="wkTitle">Workouts</div>
-        <button className="wkIconBtn" onClick={() => setActionsOpen(true)} aria-label="Workout actions">
-          +
-        </button>
       </div>
 
       <Section title="Quick Start" />
@@ -569,7 +603,7 @@ export default function WorkoutsScreen() {
 
       <div className="wkList">
         {routines.map((r) => (
-          <RoutineCard key={r.id} r={r} onOpen={handleOpenRoutine} />
+          <RoutineCard key={r.id} r={r} onOpen={handleOpenRoutine} onRemove={handleRemoveRoutine} />
         ))}
       </div>
 

@@ -180,7 +180,7 @@ function CreateRoutineSheet({ open, onClose, onCreate }) {
 
   return (
     <div className="wkSheetBackdrop" onClick={onClose} role="presentation">
-      <div className="wkSheet" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+      <div className="wkSheet wkCreateSheet" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
         <div className="wkSheetHandle" />
         <div className="wkSheetHeader">
           <button className="wkSheetTextBtn" onClick={onClose}>Cancel</button>

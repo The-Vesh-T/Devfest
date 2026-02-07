@@ -8,12 +8,54 @@ const MOCK_ROUTINES = [
 ];
 
 const DISCOVER_WORKOUTS = [
-  { id: "d1", title: "Full Body", difficulty: "Beginner", duration: "40 min", exercises: 8 },
-  { id: "d2", title: "HIIT Cardio", difficulty: "Advanced", duration: "20 min", exercises: 6 },
-  { id: "d3", title: "Legs & Glutes", difficulty: "Intermediate", duration: "50 min", exercises: 7 },
-  { id: "d4", title: "Core & Abs", difficulty: "Beginner", duration: "25 min", exercises: 5 },
-  { id: "d5", title: "Back & Biceps", difficulty: "Intermediate", duration: "45 min", exercises: 6 },
-  { id: "d6", title: "Mobility & Stretch", difficulty: "Beginner", duration: "30 min", exercises: 10 },
+  {
+    id: "d1",
+    title: "Full Body",
+    difficulty: "Beginner",
+    duration: "40 min",
+    exercises: 8,
+    exampleMoves: ["Squat", "Push-ups", "Deadlift"]
+  },
+  {
+    id: "d2",
+    title: "HIIT Cardio",
+    difficulty: "Advanced",
+    duration: "20 min",
+    exercises: 6,
+    exampleMoves: ["Burpees", "Mountain Climbers", "Sprint"]
+  },
+  {
+    id: "d3",
+    title: "Legs & Glutes",
+    difficulty: "Intermediate",
+    duration: "50 min",
+    exercises: 7,
+    exampleMoves: ["Goblet Squat", "Lunge", "Hip Thrust"]
+  },
+  {
+    id: "d4",
+    title: "Core & Abs",
+    difficulty: "Beginner",
+    duration: "25 min",
+    exercises: 5,
+    exampleMoves: ["Plank", "Dead Bug", "Bicycle Crunch"]
+  },
+  {
+    id: "d5",
+    title: "Back & Biceps",
+    difficulty: "Intermediate",
+    duration: "45 min",
+    exercises: 6,
+    exampleMoves: ["Pull-up", "Barbell Row", "Hammer Curl"]
+  },
+  {
+    id: "d6",
+    title: "Mobility & Stretch",
+    difficulty: "Beginner",
+    duration: "30 min",
+    exercises: 10,
+    exampleMoves: ["Hip Opener", "Cat-Cow", "Shoulder Pass-Through"]
+  },
 ];
 
 const ROUTINES_STORAGE_KEY = "workouts_routines_v1";
@@ -47,6 +89,8 @@ function makeExercise(name) {
   };
 }
 
+const MAX_SETS_PER_EXERCISE = 10;
+
 function makeSet() {
   return {
     id: `set_${Date.now()}_${Math.random().toString(16).slice(2)}`,
@@ -55,6 +99,21 @@ function makeSet() {
     failure: false,
     dropset: false,
   };
+}
+
+function sanitizeNumberInput(raw, { allowDecimal = false, maxIntegerDigits = 3, maxDecimalDigits = 0 } = {}) {
+  if (raw === "" || raw == null) return "";
+  let value = String(raw).replace(/-/g, "");
+  value = value.replace(/[^0-9.]/g, "");
+  if (!value) return "";
+  if (!allowDecimal) {
+    return value.replace(/\D/g, "").slice(0, maxIntegerDigits);
+  }
+
+  const [integerPart = "", ...rest] = value.split(".");
+  const filteredInt = integerPart.replace(/\D/g, "").slice(0, maxIntegerDigits) || "0";
+  const decimalPart = rest.join("").replace(/\D/g, "").slice(0, maxDecimalDigits);
+  return decimalPart ? `${filteredInt}.${decimalPart}` : filteredInt;
 }
 
 function Section({ title, right }) {
@@ -67,6 +126,7 @@ function Section({ title, right }) {
     </div>
   );
 }
+
 
 function RowButton({ icon, title, subtitle, onClick }) {
   return (
@@ -159,6 +219,11 @@ function DiscoverWorkoutCard({ w, onToggle, alreadyAdded }) {
         <span>⏱️ {w.duration}</span>
         <span>🏋️ {w.exercises} exercises</span>
       </div>
+      <div className="wkDiscoverExamples">
+        {w.exampleMoves.map((move) => (
+          <span key={move} className="wkDiscoverExample">{move}</span>
+        ))}
+      </div>
       <button
         className={`wkAddBtn ${alreadyAdded ? "wkAddBtnRemove" : ""}`}
         onClick={(e) => {
@@ -172,10 +237,39 @@ function DiscoverWorkoutCard({ w, onToggle, alreadyAdded }) {
   );
 }
 
+function WeightWarning({ weight, onCancel, onConfirm }) {
+  if (!weight) return null;
+
+  return (
+    <div className="wkSheetBackdrop" role="presentation">
+      <div className="wkSheet wkWarningSheet" role="dialog" aria-modal="true">
+        <div className="wkWarningTitle">That is a lot of weight</div>
+        <div className="wkWarningText">You entered {weight} kg. Are you sure?</div>
+        <div className="wkWarningActions">
+          <button className="wkWarningBtn" onClick={onCancel}>Cancel</button>
+          <button className="wkWarningBtn primary" onClick={onConfirm}>Confirm</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function CreateRoutineSheet({ open, onClose, onCreate }) {
   const [title, setTitle] = useState("");
+  const [exerciseInput, setExerciseInput] = useState("");
+  const [exerciseList, setExerciseList] = useState([]);
   const canSave = title.trim().length > 0;
 
+  const handleExerciseAdd = () => {
+    const trimmed = exerciseInput.trim();
+    if (!trimmed) return;
+    setExerciseList((prev) => [...prev, trimmed]);
+    setExerciseInput("");
+  };
+
+  const removeExercise = (idx) => {
+    setExerciseList((prev) => prev.filter((_, i) => i !== idx));
+  };
   if (!open) return null;
 
   return (
@@ -191,8 +285,10 @@ function CreateRoutineSheet({ open, onClose, onCreate }) {
             onClick={() => {
               const t = title.trim();
               if (!t) return;
-              onCreate(t);
+              onCreate(t, exerciseList);
               setTitle("");
+              setExerciseList([]);
+              setExerciseInput("");
               onClose();
             }}
           >
@@ -208,8 +304,10 @@ function CreateRoutineSheet({ open, onClose, onCreate }) {
             onChange={(e) => setTitle(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter" && canSave) {
-                onCreate(title.trim());
+                onCreate(title.trim(), exerciseList);
                 setTitle("");
+                setExerciseList([]);
+                setExerciseInput("");
                 onClose();
               }
             }}
@@ -218,12 +316,32 @@ function CreateRoutineSheet({ open, onClose, onCreate }) {
           />
 
           <div className="wkCreateSectionLabel">Exercises</div>
-          <div className="wkEmpty">
-            <div className="wkEmptyText">
-              No exercises yet
-            </div>
-            <button className="wkAddExerciseBtn">+ Add exercise</button>
+          <div className="wkExerciseInputRow">
+            <input
+              className="wkSetInput"
+              value={exerciseInput}
+              onChange={(e) => setExerciseInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleExerciseAdd()}
+              placeholder="Add exercise"
+            />
+            <button className="wkAddExerciseBtn" type="button" onClick={handleExerciseAdd}>
+              + Add
+            </button>
           </div>
+          {exerciseList.length === 0 ? (
+            <div className="wkEmpty">
+              <div className="wkEmptyText">No exercises yet</div>
+            </div>
+          ) : (
+            <div className="wkExerciseList">
+              {exerciseList.map((exercise, idx) => (
+                <div key={`${exercise}-${idx}`} className="wkExerciseTag">
+                  <span>{exercise}</span>
+                  <button onClick={() => removeExercise(idx)}>×</button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -314,6 +432,33 @@ function ActiveWorkoutScreen({ routine, onClose, onComplete }) {
     })
   );
   const [newExercise, setNewExercise] = useState("");
+  const [weightWarning, setWeightWarning] = useState(null);
+
+  const handleNumericKeyDown = (e, { allowDecimal }) => {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    const allowedKeys = ["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab", "Home", "End"];
+    if (allowedKeys.includes(e.key)) return;
+    if (allowDecimal && e.key === ".") return;
+    if (/^\d$/.test(e.key)) return;
+    e.preventDefault();
+  };
+
+  const handleNumericPaste = (e, { allowDecimal, maxIntegerDigits, maxDecimalDigits }) => {
+    const pasted = e.clipboardData?.getData("text") ?? "";
+    const sanitized = sanitizeNumberInput(pasted, { allowDecimal, maxIntegerDigits, maxDecimalDigits });
+    if (pasted !== sanitized) {
+      e.preventDefault();
+      const target = e.target;
+      if (target) {
+        updateSetField(
+          target.dataset.exerciseId,
+          target.dataset.setId,
+          target.dataset.field,
+          sanitized
+        );
+      }
+    }
+  };
 
   const handleAddExercise = () => {
     if (newExercise.trim()) {
@@ -324,9 +469,11 @@ function ActiveWorkoutScreen({ routine, onClose, onComplete }) {
 
   const addSet = (exerciseId) => {
     setExercises((prev) =>
-      prev.map((ex) =>
-        ex.id === exerciseId ? { ...ex, sets: [...ex.sets, makeSet()] } : ex
-      )
+      prev.map((ex) => {
+        if (ex.id !== exerciseId) return ex;
+        if (ex.sets.length >= MAX_SETS_PER_EXERCISE) return ex;
+        return { ...ex, sets: [...ex.sets, makeSet()] };
+      })
     );
   };
 
@@ -343,7 +490,19 @@ function ActiveWorkoutScreen({ routine, onClose, onComplete }) {
     );
   };
 
-  const updateSetField = (exerciseId, setId, field, value) => {
+  const sanitizeFieldValue = (field, rawValue) => {
+    if (typeof rawValue !== "string") return rawValue;
+    if (field === "weight") {
+      return sanitizeNumberInput(rawValue, { allowDecimal: true, maxIntegerDigits: 4, maxDecimalDigits: 1 });
+    }
+    if (field === "reps") {
+      return sanitizeNumberInput(rawValue, { allowDecimal: false, maxIntegerDigits: 3 });
+    }
+    return rawValue;
+  };
+
+  const updateSetField = (exerciseId, setId, field, rawValue) => {
+    const value = sanitizeFieldValue(field, rawValue);
     setExercises((prev) =>
       prev.map((ex) => {
         if (ex.id !== exerciseId) return ex;
@@ -355,30 +514,49 @@ function ActiveWorkoutScreen({ routine, onClose, onComplete }) {
         };
       })
     );
+
+    if (field === "weight") {
+      const numeric = parseFloat(value);
+      if (numeric && numeric > 1000) {
+        setWeightWarning(numeric);
+      }
+    }
   };
 
   const totalSets = exercises.reduce((sum, ex) => sum + ex.sets.length, 0);
+  const totalWeight = exercises.reduce((weight, ex) => {
+    return weight + ex.sets.reduce((setSum, set) => {
+      const parsedW = parseFloat(set.weight);
+      const parsedR = parseFloat(set.reps);
+      if (!Number.isFinite(parsedW) || !Number.isFinite(parsedR)) return setSum;
+      return setSum + Math.max(0, parsedW * parsedR);
+    }, 0);
+  }, 0);
   const canComplete = totalSets > 0;
 
   return (
-    <div className="wkActiveWorkout">
-      <div className="wkWorkoutHero">
-        <div className="wkWorkoutHeader">
-          <button className="wkBackBtn" onClick={onClose}>Cancel</button>
-          <div className="wkWorkoutTitle">{routine.title}</div>
-          <button className="wkCloseBtn" onClick={onClose} aria-label="Close workout">×</button>
-        </div>
+    <>
+      <div className="wkActiveWorkout">
+        <div className="wkWorkoutHero">
+          <div className="wkWorkoutHeader">
+            <button className="wkBackBtn" onClick={onClose}>Cancel</button>
+            <div className="wkWorkoutTitle">{routine.title}</div>
+            <button className="wkCloseBtn" onClick={onClose} aria-label="Close workout">×</button>
+          </div>
         <div className="wkHeroStats">
           <div className="wkHeroStat"><span>Exercises</span><b>{exercises.length}</b></div>
           <div className="wkHeroStat"><span>Sets</span><b>{totalSets}</b></div>
+          <div className="wkHeroStat"><span>Total weight</span><b>{Math.round(totalWeight)} kg</b></div>
         </div>
-      </div>
+        </div>
 
-      <div className="wkWorkoutBody">
-        <div className="wkWorkoutMeta">Tap into weight/reps to log each set.</div>
-        <div className="wkExercisesList">
-          {exercises.map((ex) => (
-            <div key={ex.id} className="wkWorkoutExercise">
+        <div className="wkWorkoutBody">
+          <div className="wkWorkoutMeta">
+            Tap into weight/reps to log each set · Total weight: {Math.round(totalWeight)} kg
+          </div>
+          <div className="wkExercisesList">
+            {exercises.map((ex) => (
+              <div key={ex.id} className="wkWorkoutExercise">
               <div className="wkExerciseHeader">
                 <span className="wkExerciseName">{ex.name}</span>
                 <button className="wkRemoveBtn" onClick={() => removeExercise(ex.id)}>×</button>
@@ -391,15 +569,29 @@ function ActiveWorkoutScreen({ routine, onClose, onComplete }) {
                     <input
                       className="wkSetInput"
                       placeholder="kg"
+                      type="text"
                       inputMode="decimal"
+                      pattern="[0-9]*[.]?[0-9]*"
+                      data-exercise-id={ex.id}
+                      data-set-id={set.id}
+                      data-field="weight"
                       value={set.weight}
+                      onKeyDown={(e) => handleNumericKeyDown(e, { allowDecimal: true })}
+                      onPaste={(e) => handleNumericPaste(e, { allowDecimal: true, maxIntegerDigits: 4, maxDecimalDigits: 1 })}
                       onChange={(e) => updateSetField(ex.id, set.id, "weight", e.target.value)}
                     />
                     <input
                       className="wkSetInput"
                       placeholder="reps"
+                      type="text"
                       inputMode="numeric"
+                      pattern="[0-9]*"
+                      data-exercise-id={ex.id}
+                      data-set-id={set.id}
+                      data-field="reps"
                       value={set.reps}
+                      onKeyDown={(e) => handleNumericKeyDown(e, { allowDecimal: false })}
+                      onPaste={(e) => handleNumericPaste(e, { allowDecimal: false, maxIntegerDigits: 3, maxDecimalDigits: 0 })}
                       onChange={(e) => updateSetField(ex.id, set.id, "reps", e.target.value)}
                     />
                     <button
@@ -448,8 +640,17 @@ function ActiveWorkoutScreen({ routine, onClose, onComplete }) {
         >
           ✓ Complete Workout
         </button>
-      </div>
-    </div>
+        </div>
+        </div>
+
+      {weightWarning && (
+        <WeightWarning
+          weight={weightWarning}
+          onCancel={() => setWeightWarning(null)}
+          onConfirm={() => setWeightWarning(null)}
+        />
+      )}
+    </>
   );
 }
 
@@ -505,6 +706,13 @@ function WorkoutCompleteSheet({ open, summary, onDone }) {
         <div className="wkDoneIcon">✓</div>
         <div className="wkDoneTitle">Workout Completed</div>
         <div className="wkDoneMeta">{summary.exerciseCount} exercises • {summary.setCount} sets logged</div>
+        <div className="wkDoneHint">Want to post this workout to your feed?</div>
+        <button
+          className="wkDoneBtn"
+          onClick={() => alert("Share this workout?")}
+        >
+          Post this to your friends?
+        </button>
         <button className="wkDoneBtn" onClick={onDone}>Done</button>
       </div>
     </div>
@@ -536,7 +744,7 @@ export default function WorkoutsScreen() {
     });
   }
 
-  function handleCreate(title) {
+  function handleCreate(title, exercises = []) {
     const normalizedTitle = normalizeTitle(title);
     const duplicate = routines.find((r) => normalizeTitle(r.title) === normalizedTitle);
     if (duplicate) {
@@ -545,10 +753,14 @@ export default function WorkoutsScreen() {
       return;
     }
 
-    updateRoutines((prev) => [
-      { id: `r_${Date.now()}`, title, meta: "0 exercises • ~0 min", description: "Custom routine", exercises: [] },
-      ...prev,
-    ]);
+    updateRoutines((prev) => {
+      const routineExercises = exercises.length ? exercises : [];
+      const meta = `${routineExercises.length} exercises • ~0 min`;
+      return [
+        { id: `r_${Date.now()}`, title, meta, description: "Custom routine", exercises: routineExercises },
+        ...prev,
+      ];
+    });
     setCreateOpen(false);
   }
 
@@ -581,7 +793,7 @@ export default function WorkoutsScreen() {
         title: workout.title, 
         meta: `${workout.exercises} exercises • ${workout.duration}`,
         description: workout.difficulty,
-        exercises: Array(workout.exercises).fill(null).map((_, i) => `Exercise ${i + 1}`)
+        exercises: workout.exampleMoves || Array(workout.exercises).fill(null).map((_, i) => `Exercise ${i + 1}`)
       },
       ...prev,
     ]);

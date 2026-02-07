@@ -54,19 +54,19 @@ export default function FoodScreen() {
       </div>
 
       <div className="summaryRow">
-        <div className="miniStat">
+        <div className="miniStat kcal">
           <div className="miniNum">1,280</div>
           <div className="miniLabel">kcal</div>
         </div>
-        <div className="miniStat">
+        <div className="miniStat protein">
           <div className="miniNum">92g</div>
           <div className="miniLabel">protein</div>
         </div>
-        <div className="miniStat">
+        <div className="miniStat carbs">
           <div className="miniNum">140g</div>
           <div className="miniLabel">carbs</div>
         </div>
-        <div className="miniStat">
+        <div className="miniStat fat">
           <div className="miniNum">42g</div>
           <div className="miniLabel">fat</div>
         </div>
@@ -81,15 +81,15 @@ export default function FoodScreen() {
             </div>
             <div className="cardText">{meal.detail}</div>
             <div className="mealMacros">
-              <div className="mealMacro">
+              <div className="mealMacro protein">
                 <div className="mealMacroNum">{meal.protein}g</div>
                 <div className="mealMacroLabel">protein</div>
               </div>
-              <div className="mealMacro">
+              <div className="mealMacro carbs">
                 <div className="mealMacroNum">{meal.carbs}g</div>
                 <div className="mealMacroLabel">carbs</div>
               </div>
-              <div className="mealMacro">
+              <div className="mealMacro fat">
                 <div className="mealMacroNum">{meal.fat}g</div>
                 <div className="mealMacroLabel">fat</div>
               </div>

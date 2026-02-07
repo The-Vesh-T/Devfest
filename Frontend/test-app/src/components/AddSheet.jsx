@@ -1,15 +1,48 @@
 import { useState } from "react";
 
-export default function AddSheet({ open, onClose, mode }) {
+export default function AddSheet({ open, onClose, mode, onCreateFood, customFoods }) {
   const [foodView, setFoodView] = useState("root"); // root | add-meal
   const [mealTab, setMealTab] = useState("all"); // all | favorites | custom
+  const [showCustomForm, setShowCustomForm] = useState(false);
+  const [foodName, setFoodName] = useState("");
+  const [servings, setServings] = useState("");
+  const [caloriesPerServing, setCaloriesPerServing] = useState("");
 
   if (!open) return null;
 
   const handleClose = () => {
     setFoodView("root");
     setMealTab("all");
+    setShowCustomForm(false);
+    setFoodName("");
+    setServings("");
+    setCaloriesPerServing("");
     onClose();
+  };
+
+  const handleCreateFood = () => {
+    const cleanName = foodName.trim();
+    const servingsNum = Number(servings);
+    const caloriesNum = Number(caloriesPerServing);
+
+    if (!cleanName || Number.isNaN(servingsNum) || Number.isNaN(caloriesNum) || servingsNum <= 0 || caloriesNum <= 0) {
+      return;
+    }
+
+    onCreateFood?.({
+      name: cleanName,
+      servings: servingsNum,
+      calories: Math.round(servingsNum * caloriesNum),
+      protein: 0,
+      carbs: 0,
+      fat: 0,
+      detail: `${servingsNum} serving${servingsNum === 1 ? "" : "s"} • ${caloriesNum} kcal/serving`,
+    });
+
+    setFoodName("");
+    setServings("");
+    setCaloriesPerServing("");
+    setShowCustomForm(false);
   };
 
   return (
@@ -91,9 +124,68 @@ export default function AddSheet({ open, onClose, mode }) {
                     </div>
                   )}
                   {mealTab === "custom" && (
-                    <div className="sheetOption">
-                      <div className="sheetOptionTitle">Custom meal</div>
-                      <div className="sheetOptionSub">Create a meal from scratch</div>
+                    <div className="customStack">
+                      {!showCustomForm ? (
+                        <div className="customHeader">
+                          <button className="smallBtn" onClick={() => setShowCustomForm(true)}>
+                            Create food
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="customHeader backOnly">
+                          <button className="backBtn" onClick={() => setShowCustomForm(false)} aria-label="Back">
+                            ←
+                          </button>
+                        </div>
+                      )}
+
+                      {!showCustomForm ? (
+                        <div className="customList">
+                          <div className="sheetOptionTitle">Custom foods</div>
+                          {customFoods && customFoods.length > 0 ? (
+                            customFoods.map((food) => (
+                              <div key={food.id} className="sheetOption">
+                                <div className="sheetOptionTitle">{food.name}</div>
+                                <div className="sheetOptionSub">{food.detail}</div>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="sheetOption">
+                              <div className="sheetOptionSub">No custom foods yet.</div>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="customMealForm">
+                          <div className="sheetOptionTitle">Create a food</div>
+                          <div className="sheetOptionSub">Build your own meal item.</div>
+                          <input
+                            className="input"
+                            placeholder="Food name (e.g., Turkey sandwich)"
+                            value={foodName}
+                            onChange={(e) => setFoodName(e.target.value)}
+                          />
+                          <div className="row">
+                            <input
+                              className="input"
+                              placeholder="Servings"
+                              inputMode="decimal"
+                              value={servings}
+                              onChange={(e) => setServings(e.target.value)}
+                            />
+                            <input
+                              className="input"
+                              placeholder="Calories per serving"
+                              inputMode="decimal"
+                              value={caloriesPerServing}
+                              onChange={(e) => setCaloriesPerServing(e.target.value)}
+                            />
+                          </div>
+                          <button className="primaryBtn" onClick={handleCreateFood}>
+                            Create food
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

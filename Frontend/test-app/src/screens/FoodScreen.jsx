@@ -1,27 +1,6 @@
 import "./FoodScreen.css";
 
-export default function FoodScreen() {
-  const meals = [
-    {
-      id: 1,
-      name: "Lunch",
-      calories: 400,
-      protein: 32,
-      carbs: 45,
-      fat: 14,
-      detail: "Chicken bowl • rice • veggies",
-    },
-    {
-      id: 2,
-      name: "Snack",
-      calories: 220,
-      protein: 18,
-      carbs: 24,
-      fat: 6,
-      detail: "Greek yogurt • honey",
-    },
-  ];
-
+export default function FoodScreen({ meals }) {
   const calories = meals.reduce((sum, meal) => sum + meal.calories, 0);
   const goal = 1800;
   const remaining = Math.max(goal - calories, 0);

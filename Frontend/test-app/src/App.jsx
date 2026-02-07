@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import "./App.css";
 
 import PhoneFrame from "./components/PhoneFrame";
@@ -13,9 +13,38 @@ import WorkoutsScreen from "./screens/WorkoutsScreen";
 export default function App() {
   const [tab, setTab] = useState("home"); // home | food | workouts
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [customFoods, setCustomFoods] = useState([]);
   const isWorkoutTab = tab === "workouts";
 
   const mode = isWorkoutTab ? "workout" : "food";
+  const meals = useMemo(
+    () => [
+      {
+        id: 1,
+        name: "Lunch",
+        calories: 400,
+        protein: 32,
+        carbs: 45,
+        fat: 14,
+        detail: "Chicken bowl • rice • veggies",
+      },
+      {
+        id: 2,
+        name: "Snack",
+        calories: 220,
+        protein: 18,
+        carbs: 24,
+        fat: 6,
+        detail: "Greek yogurt • honey",
+      },
+      ...customFoods,
+    ],
+    [customFoods]
+  );
+
+  const handleCreateFood = (food) => {
+    setCustomFoods((prev) => [{ ...food, id: `custom_${Date.now()}` }, ...prev]);
+  };
 
   return (
     <div className="stage">
@@ -25,7 +54,7 @@ export default function App() {
 
           <main className="content">
             {tab === "home" && <HomeScreen />}
-            {tab === "food" && <FoodScreen />}
+            {tab === "food" && <FoodScreen meals={meals} />}
             {tab === "workouts" && <WorkoutsScreen />}
           </main>
 
@@ -46,7 +75,13 @@ export default function App() {
           <BottomNav tab={tab} setTab={setTab} />
         </div>
 
-        <AddSheet open={sheetOpen} onClose={() => setSheetOpen(false)} mode={mode} />
+        <AddSheet
+          open={sheetOpen}
+          onClose={() => setSheetOpen(false)}
+          mode={mode}
+          onCreateFood={handleCreateFood}
+          customFoods={customFoods}
+        />
       </PhoneFrame>
     </div>
   );

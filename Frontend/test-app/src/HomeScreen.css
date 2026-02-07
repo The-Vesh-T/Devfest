@@ -1,0 +1,200 @@
+/* Home screen-only enhancements (kept aligned to global UI) */
+.homeHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 6px 2px 12px;
+}
+
+.homeKicker {
+  font-size: 12px;
+  color: rgba(255,255,255,0.55);
+  text-transform: uppercase;
+  letter-spacing: 1.4px;
+}
+
+.homeTitle { margin: 4px 0 0; }
+
+.streakBadge {
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.06);
+  padding: 8px 10px;
+  border-radius: 14px;
+  text-align: center;
+  min-width: 76px;
+}
+
+.streakNum { font-weight: 950; font-size: 18px; line-height: 1; }
+.streakLabel { font-size: 11px; color: rgba(255,255,255,0.7); margin-top: 2px; }
+
+.heroCard {
+  border-radius: 20px;
+  padding: 16px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.10);
+  margin-bottom: 14px;
+}
+
+.heroTop {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.heroLabel {
+  font-size: 12px;
+  color: rgba(255,255,255,0.6);
+  text-transform: uppercase;
+  letter-spacing: 1.3px;
+}
+
+.heroValue { font-size: 22px; font-weight: 950; margin-top: 4px; }
+.heroSub { font-size: 13px; color: rgba(255,255,255,0.7); margin-top: 4px; }
+
+.progressRing {
+  width: 72px;
+  height: 72px;
+  border-radius: 999px;
+  position: relative;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.progressRing::before,
+.progressRing::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  -webkit-mask: radial-gradient(
+    farthest-side,
+    transparent calc(100% - 8px),
+    #000 0
+  );
+  mask: radial-gradient(
+    farthest-side,
+    transparent calc(100% - 8px),
+    #000 0
+  );
+}
+
+.progressRing::before {
+  background: rgba(255,255,255,0.12);
+}
+
+.progressRing::after {
+  background: conic-gradient(#7dd3fc 0 244deg, transparent 0);
+}
+
+.progressInner {
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  background: #0f1115;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
+.progressValue { font-weight: 950; font-size: 14px; }
+.progressLabel { font-size: 10px; color: rgba(255,255,255,0.6); }
+
+.heroGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.heroStat {
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(0,0,0,0.18);
+  border-radius: 14px;
+  padding: 10px 8px;
+  text-align: center;
+}
+
+.heroStatNum { font-weight: 950; }
+.heroStatLabel { font-size: 11px; color: rgba(255,255,255,0.6); margin-top: 2px; }
+
+.quickActions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 10px 0 14px;
+}
+
+.quickAction {
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.04);
+  color: #e6f3ff;
+  border-radius: 16px;
+  padding: 12px 8px;
+  display: grid;
+  place-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.quickIcon { font-size: 18px; }
+.quickLabel { font-size: 12px; font-weight: 900; }
+
+.sectionTitle {
+  margin: 10px 2px 8px;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: rgba(255,255,255,0.55);
+  font-weight: 800;
+}
+
+.focusCard .pill {
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.85);
+  border-color: rgba(255,255,255,0.12);
+}
+
+.feedCard.focused {
+  border-color: rgba(125,211,252,0.45);
+  box-shadow: 0 0 0 1px rgba(125,211,252,0.2) inset;
+}
+
+.focusActions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.focusBtn {
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.06);
+  color: #e6f3ff;
+  border-radius: 12px;
+  padding: 8px 10px;
+  font-weight: 800;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.focusBtn.iconBtn {
+  display: grid;
+  place-items: center;
+  padding: 10px 0;
+}
+
+.focusBtn.iconBtn svg {
+  width: 18px;
+  height: 18px;
+  color: #f2f2f2;
+}
+
+.focusBtn.ghost {
+  grid-column: span 3;
+  background: transparent;
+  color: rgba(255,255,255,0.7);
+}

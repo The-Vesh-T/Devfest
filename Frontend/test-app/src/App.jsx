@@ -29,19 +29,21 @@ export default function App() {
             {tab === "workouts" && <WorkoutsScreen />}
           </main>
 
-          <button
-            className="fab"
-            onClick={() => {
-              if (isWorkoutTab) {
-                window.dispatchEvent(new Event("open-workout-actions"));
-                return;
-              }
-              setSheetOpen(true);
-            }}
-            aria-label="Add"
-          >
-            +
-          </button>
+          {tab !== "home" && (
+            <button
+              className="fab"
+              onClick={() => {
+                if (isWorkoutTab) {
+                  window.dispatchEvent(new Event("open-workout-actions"));
+                  return;
+                }
+                setSheetOpen(true);
+              }}
+              aria-label="Add"
+            >
+              +
+            </button>
+          )}
 
           <BottomNav tab={tab} setTab={setTab} />
         </div>

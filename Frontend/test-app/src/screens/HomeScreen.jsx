@@ -66,6 +66,8 @@ export default function HomeScreen({
   onSaveNutritionGoals,
   biometrics,
   onSaveBiometrics,
+  micronutrients,
+  onSaveMicronutrients,
   usePlaceholderPosts = true,
 }) {
   const activeUser = currentUser ?? {
@@ -141,8 +143,18 @@ export default function HomeScreen({
     weightLbs: `${biometrics?.weightLbs ?? ""}`,
     weightKg: `${biometrics?.weightKg ?? ""}`,
   });
+  const [micronutrientsDraft, setMicronutrientsDraft] = useState({
+    fiberG: `${micronutrients?.fiberG ?? ""}`,
+    sodiumMg: `${micronutrients?.sodiumMg ?? ""}`,
+    vitaminDIU: `${micronutrients?.vitaminDIU ?? ""}`,
+    ironMg: `${micronutrients?.ironMg ?? ""}`,
+    potassiumMg: `${micronutrients?.potassiumMg ?? ""}`,
+    magnesiumMg: `${micronutrients?.magnesiumMg ?? ""}`,
+    calciumMg: `${micronutrients?.calciumMg ?? ""}`,
+  });
   const [goalsSaved, setGoalsSaved] = useState(false);
   const [biometricsSaved, setBiometricsSaved] = useState(false);
+  const [micronutrientsSaved, setMicronutrientsSaved] = useState(false);
 
   useEffect(() => {
     setPersonalBio(activeUser.bio);
@@ -166,6 +178,18 @@ export default function HomeScreen({
       weightKg: `${biometrics?.weightKg ?? ""}`,
     });
   }, [biometrics]);
+
+  useEffect(() => {
+    setMicronutrientsDraft({
+      fiberG: `${micronutrients?.fiberG ?? ""}`,
+      sodiumMg: `${micronutrients?.sodiumMg ?? ""}`,
+      vitaminDIU: `${micronutrients?.vitaminDIU ?? ""}`,
+      ironMg: `${micronutrients?.ironMg ?? ""}`,
+      potassiumMg: `${micronutrients?.potassiumMg ?? ""}`,
+      magnesiumMg: `${micronutrients?.magnesiumMg ?? ""}`,
+      calciumMg: `${micronutrients?.calciumMg ?? ""}`,
+    });
+  }, [micronutrients]);
 
   useEffect(() => {
     if (!usePlaceholderPosts) {
@@ -216,6 +240,32 @@ export default function HomeScreen({
     biometricsDraft.heightCm ? `${biometricsDraft.heightCm} cm` : null,
     biometricsDraft.weightLbs ? `${biometricsDraft.weightLbs} lb` : null,
     biometricsDraft.weightKg ? `${biometricsDraft.weightKg} kg` : null,
+  ]
+    .filter(Boolean)
+    .join(" • ");
+
+  const saveMicronutrients = () => {
+    onSaveMicronutrients?.({
+      fiberG: micronutrientsDraft.fiberG,
+      sodiumMg: micronutrientsDraft.sodiumMg,
+      vitaminDIU: micronutrientsDraft.vitaminDIU,
+      ironMg: micronutrientsDraft.ironMg,
+      potassiumMg: micronutrientsDraft.potassiumMg,
+      magnesiumMg: micronutrientsDraft.magnesiumMg,
+      calciumMg: micronutrientsDraft.calciumMg,
+    });
+    setMicronutrientsSaved(true);
+    setTimeout(() => setMicronutrientsSaved(false), 1400);
+  };
+
+  const micronutrientsSummary = [
+    micronutrientsDraft.fiberG ? `Fiber ${micronutrientsDraft.fiberG} g` : null,
+    micronutrientsDraft.sodiumMg ? `Sodium ${micronutrientsDraft.sodiumMg} mg` : null,
+    micronutrientsDraft.vitaminDIU ? `Vitamin D ${micronutrientsDraft.vitaminDIU} IU` : null,
+    micronutrientsDraft.ironMg ? `Iron ${micronutrientsDraft.ironMg} mg` : null,
+    micronutrientsDraft.potassiumMg ? `Potassium ${micronutrientsDraft.potassiumMg} mg` : null,
+    micronutrientsDraft.magnesiumMg ? `Magnesium ${micronutrientsDraft.magnesiumMg} mg` : null,
+    micronutrientsDraft.calciumMg ? `Calcium ${micronutrientsDraft.calciumMg} mg` : null,
   ]
     .filter(Boolean)
     .join(" • ");
@@ -923,13 +973,141 @@ export default function HomeScreen({
               </button>
               {settingsExpanded.micro && (
                 <div className="settingsContent">
-                  <div className="row">
-                    <input className="input" placeholder="Fiber (g)" />
-                    <input className="input" placeholder="Sodium (mg)" />
+                  <div className="settingsField">
+                    <label className="settingsFieldLabel" htmlFor="micro-fiber">
+                      Fiber (digestion)
+                    </label>
+                    <input
+                      id="micro-fiber"
+                      className="input"
+                      placeholder="Fiber (g)"
+                      inputMode="numeric"
+                      value={micronutrientsDraft.fiberG}
+                      onChange={(e) =>
+                        setMicronutrientsDraft((prev) => ({
+                          ...prev,
+                          fiberG: e.target.value.replace(/\D/g, ""),
+                        }))
+                      }
+                    />
                   </div>
-                  <div className="row">
-                    <input className="input" placeholder="Vitamin D (IU)" />
-                    <input className="input" placeholder="Iron (mg)" />
+                  <div className="settingsField">
+                    <label className="settingsFieldLabel" htmlFor="micro-sodium">
+                      Sodium (hydration / electrolytes)
+                    </label>
+                    <input
+                      id="micro-sodium"
+                      className="input"
+                      placeholder="Sodium (mg)"
+                      inputMode="numeric"
+                      value={micronutrientsDraft.sodiumMg}
+                      onChange={(e) =>
+                        setMicronutrientsDraft((prev) => ({
+                          ...prev,
+                          sodiumMg: e.target.value.replace(/\D/g, ""),
+                        }))
+                      }
+                    />
+                  </div>
+                  <div className="settingsField">
+                    <label className="settingsFieldLabel" htmlFor="micro-vitamin-d">
+                      Vitamin D (bone / immune)
+                    </label>
+                    <input
+                      id="micro-vitamin-d"
+                      className="input"
+                      placeholder="Vitamin D (IU)"
+                      inputMode="numeric"
+                      value={micronutrientsDraft.vitaminDIU}
+                      onChange={(e) =>
+                        setMicronutrientsDraft((prev) => ({
+                          ...prev,
+                          vitaminDIU: e.target.value.replace(/\D/g, ""),
+                        }))
+                      }
+                    />
+                  </div>
+                  <div className="settingsField">
+                    <label className="settingsFieldLabel" htmlFor="micro-iron">
+                      Iron (oxygen transport)
+                    </label>
+                    <input
+                      id="micro-iron"
+                      className="input"
+                      placeholder="Iron (mg)"
+                      inputMode="numeric"
+                      value={micronutrientsDraft.ironMg}
+                      onChange={(e) =>
+                        setMicronutrientsDraft((prev) => ({
+                          ...prev,
+                          ironMg: e.target.value.replace(/\D/g, ""),
+                        }))
+                      }
+                    />
+                  </div>
+                  <div className="settingsField">
+                    <label className="settingsFieldLabel" htmlFor="micro-potassium">
+                      Potassium (muscle / nerve)
+                    </label>
+                    <input
+                      id="micro-potassium"
+                      className="input"
+                      placeholder="Potassium (mg)"
+                      inputMode="numeric"
+                      value={micronutrientsDraft.potassiumMg}
+                      onChange={(e) =>
+                        setMicronutrientsDraft((prev) => ({
+                          ...prev,
+                          potassiumMg: e.target.value.replace(/\D/g, ""),
+                        }))
+                      }
+                    />
+                  </div>
+                  <div className="settingsField">
+                    <label className="settingsFieldLabel" htmlFor="micro-magnesium">
+                      Magnesium (sleep / recovery)
+                    </label>
+                    <input
+                      id="micro-magnesium"
+                      className="input"
+                      placeholder="Magnesium (mg)"
+                      inputMode="numeric"
+                      value={micronutrientsDraft.magnesiumMg}
+                      onChange={(e) =>
+                        setMicronutrientsDraft((prev) => ({
+                          ...prev,
+                          magnesiumMg: e.target.value.replace(/\D/g, ""),
+                        }))
+                      }
+                    />
+                  </div>
+                  <div className="settingsField">
+                    <label className="settingsFieldLabel" htmlFor="micro-calcium">
+                      Calcium (bones / contraction)
+                    </label>
+                    <input
+                      id="micro-calcium"
+                      className="input"
+                      placeholder="Calcium (mg)"
+                      inputMode="numeric"
+                      value={micronutrientsDraft.calciumMg}
+                      onChange={(e) =>
+                        setMicronutrientsDraft((prev) => ({
+                          ...prev,
+                          calciumMg: e.target.value.replace(/\D/g, ""),
+                        }))
+                      }
+                    />
+                  </div>
+                  <div className="settingsActionRow">
+                    <button className="primaryBtn settingsSaveButton" type="button" onClick={saveMicronutrients}>
+                      Save
+                    </button>
+                  </div>
+                  <div className="cardText">
+                    {micronutrientsSaved
+                      ? `Micronutrients saved${micronutrientsSummary ? `: ${micronutrientsSummary}` : ""}`
+                      : micronutrientsSummary}
                   </div>
                 </div>
               )}

@@ -130,6 +130,7 @@ export default function App() {
   const selectedDateKey = useMemo(() => toDateKey(selectedDate), [selectedDate])
 
   const meals = useMemo(() => [...BASE_MEALS, ...mealEntries], [mealEntries])
+  const allMealOptions = useMemo(() => [...BASE_MEALS, ...customFoods], [customFoods])
 
   const syncCustomFoods = useCallback(async () => {
     if (!isAuthenticated || !isSupabaseConfigured) return
@@ -185,24 +186,7 @@ export default function App() {
     syncPosts()
   }, [isAuthenticated, syncPosts])
 
-  const handleCreateFood = async (food) => {
-    const localFood = toLocalCustomFood(food)
-
-    if (!isSupabaseConfigured) {
-      setCustomFoods((prev) => [localFood, ...prev])
-      return
-    }
-
-    const { data, error } = await createCustomFood({ userId: currentUserId, food: localFood })
-    if (error || !data) {
-      console.error("Failed to create custom food in Supabase", error)
-      setCustomFoods((prev) => [localFood, ...prev])
-      return
-    }
-    setCustomFoods((prev) => [data, ...prev])
-  }
-
-  const handleAddMealFromScan = async (meal) => {
+  const addMealToIntake = async ({ meal, source = "manual", barcode = null }) => {
     if (!meal) return
     const localMeal = toLocalMeal(meal)
 
@@ -215,15 +199,54 @@ export default function App() {
       userId: currentUserId,
       dateKey: selectedDateKey,
       meal: localMeal,
-      source: "barcode",
-      barcode: localMeal.barcode,
+      source,
+      barcode: barcode ?? localMeal.barcode ?? null,
     })
     if (error || !data) {
-      console.error("Failed to add scanned meal to Supabase", error)
+      console.error("Failed to add meal entry in Supabase", error)
       setMealEntries((prev) => [localMeal, ...prev])
       return
     }
     setMealEntries((prev) => [data, ...prev])
+  }
+
+  const handleCreateFood = async (food) => {
+    const localFood = toLocalCustomFood(food)
+
+    if (!isSupabaseConfigured) {
+      setCustomFoods((prev) => [localFood, ...prev])
+      await addMealToIntake({ meal: localFood, source: "manual" })
+      return
+    }
+
+    const { data: createdFood, error: createFoodError } = await createCustomFood({
+      userId: currentUserId,
+      food: localFood,
+    })
+    if (createFoodError || !createdFood) {
+      console.error("Failed to create custom food in Supabase", createFoodError)
+      setCustomFoods((prev) => [localFood, ...prev])
+      await addMealToIntake({ meal: localFood, source: "manual" })
+      return
+    }
+    setCustomFoods((prev) => [createdFood, ...prev])
+    await addMealToIntake({ meal: createdFood, source: "manual" })
+  }
+
+  const handleAddMealFromScan = async (meal) => {
+    await addMealToIntake({
+      meal,
+      source: "barcode",
+      barcode: meal?.barcode ?? null,
+    })
+  }
+
+  const handleAddMealFromMenu = async (meal) => {
+    await addMealToIntake({
+      meal,
+      source: "manual",
+      barcode: meal?.barcode ?? null,
+    })
   }
 
   const handleToggleFavorite = async (id) => {
@@ -454,8 +477,10 @@ export default function App() {
             onClose={() => setSheetOpen(false)}
             mode={mode}
             onCreateFood={handleCreateFood}
+            allMeals={allMealOptions}
             customFoods={customFoods}
             onToggleFavorite={handleToggleFavorite}
+            onAddMeal={handleAddMealFromMenu}
             onAddMealFromScan={handleAddMealFromScan}
           />
         ) : null}

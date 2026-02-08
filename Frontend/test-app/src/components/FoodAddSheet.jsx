@@ -8,8 +8,10 @@ export default function FoodAddSheet({
   onClose,
   mode,
   onCreateFood,
+  allMeals,
   customFoods,
   onToggleFavorite,
+  onAddMeal,
   onAddMealFromScan,
 }) {
   const [foodView, setFoodView] = useState("root"); // root | add-meal
@@ -343,6 +345,20 @@ export default function FoodAddSheet({
     setShowCustomForm(false);
   };
 
+  const handleMealPick = async (food) => {
+    if (!food) return;
+    await onAddMeal?.({
+      name: food.name,
+      calories: food.calories,
+      protein: food.protein,
+      carbs: food.carbs,
+      fat: food.fat,
+      detail: food.detail,
+      barcode: food.barcode ?? null,
+    });
+    handleClose();
+  };
+
   return (
     <div className={`sheetBackdrop ${mode === "food" && foodView === "add-meal" ? "foodPageBackdrop" : ""}`} onClick={handleClose} role="presentation">
       <div
@@ -431,9 +447,35 @@ export default function FoodAddSheet({
 
                 <div className="mealTabPanel" role="tabpanel">
                   {mealTab === "all" && (
-                    <div className="sheetOption">
+                    <div className="customList">
                       <div className="sheetOptionTitle">All meals</div>
-                      <div className="sheetOptionSub">Browse the full database</div>
+                      {allMeals && allMeals.length > 0 ? (
+                        allMeals.map((food) => (
+                          <div
+                            key={food.id}
+                            className="sheetOption rowBetween mealPickRow"
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => handleMealPick(food)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                handleMealPick(food);
+                              }
+                            }}
+                          >
+                            <div>
+                              <div className="sheetOptionTitle">{food.name}</div>
+                              <div className="sheetOptionSub">{food.detail}</div>
+                            </div>
+                            <div className="sheetOptionSub">{food.calories} kcal</div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="sheetOption">
+                          <div className="sheetOptionSub">No meals yet.</div>
+                        </div>
+                      )}
                     </div>
                   )}
                   {mealTab === "favorites" && (
@@ -443,14 +485,29 @@ export default function FoodAddSheet({
                         customFoods
                           .filter((food) => food.favorite)
                           .map((food) => (
-                            <div key={food.id} className="sheetOption rowBetween">
+                            <div
+                              key={food.id}
+                              className="sheetOption rowBetween mealPickRow"
+                              role="button"
+                              tabIndex={0}
+                              onClick={() => handleMealPick(food)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                  e.preventDefault();
+                                  handleMealPick(food);
+                                }
+                              }}
+                            >
                               <div>
                                 <div className="sheetOptionTitle">{food.name}</div>
                                 <div className="sheetOptionSub">{food.detail}</div>
                               </div>
                               <button
                                 className={`starBtn ${food.favorite ? "active" : ""}`}
-                                onClick={() => onToggleFavorite?.(food.id)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onToggleFavorite?.(food.id);
+                                }}
                                 aria-label="Toggle favorite"
                               >
                                 {food.favorite ? "★" : "☆"}
@@ -480,14 +537,29 @@ export default function FoodAddSheet({
                             <div className="sheetOptionTitle">Custom foods</div>
                             {customFoods && customFoods.length > 0 ? (
                               customFoods.map((food) => (
-                                <div key={food.id} className="sheetOption rowBetween">
+                                <div
+                                  key={food.id}
+                                  className="sheetOption rowBetween mealPickRow"
+                                  role="button"
+                                  tabIndex={0}
+                                  onClick={() => handleMealPick(food)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter" || e.key === " ") {
+                                      e.preventDefault();
+                                      handleMealPick(food);
+                                    }
+                                  }}
+                                >
                                   <div>
                                     <div className="sheetOptionTitle">{food.name}</div>
                                     <div className="sheetOptionSub">{food.detail}</div>
                                   </div>
                                   <button
                                     className={`starBtn ${food.favorite ? "active" : ""}`}
-                                    onClick={() => onToggleFavorite?.(food.id)}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onToggleFavorite?.(food.id);
+                                    }}
                                     aria-label="Toggle favorite"
                                   >
                                     {food.favorite ? "★" : "☆"}

@@ -9,6 +9,8 @@ export default function FoodScreen({ meals }) {
   const calories = safeMeals.reduce((sum, meal) => sum + toNumber(meal?.calories), 0);
   const goal = 1800;
   const remaining = Math.max(goal - calories, 0);
+  const overBy = Math.max(calories - goal, 0);
+  const isOverGoal = overBy > 0;
   const pct = Math.max(0, Math.min(calories / goal, 1));
   const radius = 54;
   const circumference = 2 * Math.PI * radius;
@@ -16,8 +18,13 @@ export default function FoodScreen({ meals }) {
 
   return (
     <div className="screenBody foodScreenBody">
-      <div className="calRing">
-        <svg className="calRingSvg" viewBox="0 0 140 140" role="img" aria-label={`${calories} calories eaten`}>
+      <div className={`calRing ${isOverGoal ? "overLimit" : ""}`}>
+        <svg
+          className="calRingSvg"
+          viewBox="0 0 140 140"
+          role="img"
+          aria-label={`${calories} calories eaten${isOverGoal ? `, ${overBy} over goal` : ""}`}
+        >
           <circle className="calRingTrack" cx="70" cy="70" r={radius} />
           <circle
             className="calRingProgress"
@@ -31,7 +38,9 @@ export default function FoodScreen({ meals }) {
         <div className="calRingCenter">
           <div className="calRingNum">{calories.toLocaleString()}</div>
           <div className="calRingLabel">kcal eaten</div>
-          <div className="calRingSub">{remaining.toLocaleString()} kcal left</div>
+          <div className="calRingSub">
+            {isOverGoal ? `${overBy.toLocaleString()} kcal over` : `${remaining.toLocaleString()} kcal left`}
+          </div>
         </div>
       </div>
 

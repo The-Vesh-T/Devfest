@@ -26,6 +26,10 @@
   filter: drop-shadow(0 6px 10px rgba(0,0,0,0.35));
 }
 
+.calRing.overLimit .calRingProgress {
+  stroke: #f87171;
+}
+
 .calRingCenter {
   position: absolute;
   display: grid;
@@ -51,6 +55,11 @@
 .calRingSub {
   font-size: 11px;
   color: rgba(255,255,255,0.60);
+}
+
+.calRing.overLimit .calRingSub {
+  color: #fca5a5;
+  font-weight: 800;
 }
 
 .summaryRow {

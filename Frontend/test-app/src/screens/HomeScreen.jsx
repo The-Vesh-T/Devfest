@@ -61,6 +61,7 @@ export default function HomeScreen({
   selectedDate,
   onTogglePostLike,
   onAddPostReply,
+  onToggleCommentLike,
   usePlaceholderPosts = true,
 }) {
   const activeUser = currentUser ?? {
@@ -182,10 +183,12 @@ export default function HomeScreen({
   const sendReply = (id, postId) => {
     const text = (replyDrafts[id] || "").trim();
     if (!text) return;
-    setRepliesById((prev) => ({
-      ...prev,
-      [id]: [...(prev[id] || []), text],
-    }));
+    if (usePlaceholderPosts) {
+      setRepliesById((prev) => ({
+        ...prev,
+        [id]: [...(prev[id] || []), text],
+      }));
+    }
     setReplyDrafts((prev) => ({ ...prev, [id]: "" }));
     setReplyId(null);
     if (postId) {
@@ -196,38 +199,71 @@ export default function HomeScreen({
   const sendPostReply = (id) => {
     const text = (postReplyDrafts[id] || "").trim();
     if (!text) return;
-    setPostRepliesById((prev) => ({
-      ...prev,
-      [id]: [...(prev[id] || []), text],
-    }));
+    if (usePlaceholderPosts) {
+      setPostRepliesById((prev) => ({
+        ...prev,
+        [id]: [...(prev[id] || []), text],
+      }));
+    }
     setPostReplyDrafts((prev) => ({ ...prev, [id]: "" }));
     setPostReplyId(null);
     onAddPostReply?.(id, text);
   };
 
-  const toggleReplyLike = (key) => {
-    setReplyLikes((prev) => ({ ...prev, [key]: !prev[key] }));
+  const toggleReplyLike = (key, currentLiked = false, commentId = null) => {
+    const nextLiked = !currentLiked;
+    setReplyLikes((prev) => ({ ...prev, [key]: nextLiked }));
+    if (commentId) {
+      onToggleCommentLike?.(commentId, nextLiked);
+    }
   };
 
-  const sendReplyToReply = (key) => {
+  const sendReplyToReply = (key, postId = null, parentCommentId = null) => {
     const text = (replyReplyDrafts[key] || "").trim();
     if (!text) return;
-    setReplyRepliesByKey((prev) => ({
-      ...prev,
-      [key]: [...(prev[key] || []), text],
-    }));
+    if (postId && parentCommentId) {
+      onAddPostReply?.(postId, text, parentCommentId);
+    } else {
+      setReplyRepliesByKey((prev) => ({
+        ...prev,
+        [key]: [...(prev[key] || []), text],
+      }));
+    }
     setReplyReplyDrafts((prev) => ({ ...prev, [key]: "" }));
     setReplyReplyOpen((prev) => ({ ...prev, [key]: false }));
   };
 
-  const sendActivityReply = (key) => {
+  const sendActivityReply = (key, postId = null) => {
     const text = (activityReplyDrafts[key] || "").trim();
     if (!text) return;
-    setActivityRepliesByKey((prev) => ({
-      ...prev,
-      [key]: [...(prev[key] || []), text],
-    }));
+    if (postId) {
+      onAddPostReply?.(postId, text);
+    } else {
+      setActivityRepliesByKey((prev) => ({
+        ...prev,
+        [key]: [...(prev[key] || []), text],
+      }));
+    }
     setActivityReplyDrafts((prev) => ({ ...prev, [key]: "" }));
+  };
+
+  const toReplyModel = (comment, fallbackAuthor) => ({
+    id: comment?.id || null,
+    author: comment?.author || fallbackAuthor || "User",
+    text: comment?.body || "",
+    likedByMe: Boolean(comment?.likedByMe),
+    replies: (comment?.replies || []).map((nested) => toReplyModel(nested, fallbackAuthor)),
+  });
+
+  const getActivityPost = (user, activity) => {
+    const userToken = `${user?.name || ""}`.trim().split(/\s+/)[0]?.toLowerCase() || "";
+    return (
+      mergedPosts.find((post) => {
+        const authorToken = `${post?.author || ""}`.trim().split(/\s+/)[0]?.toLowerCase() || "";
+        const titleMatch = `${post?.title || ""}`.trim() === `${activity?.title || ""}`.trim();
+        return authorToken === userToken && titleMatch;
+      }) || null
+    );
   };
 
   const mergedPosts = usePlaceholderPosts
@@ -773,13 +809,15 @@ export default function HomeScreen({
                   <button
                     key={`pa-${i}`}
                     className="activityCard"
-                    onClick={() =>
+                    onClick={() => {
+                      const linkedPost = getActivityPost(personalProfile, a);
                       setActivityOpen({
                         user: personalProfile,
                         activity: a,
-                        key: `act-me-${i}`,
-                      })
-                    }
+                        key: linkedPost?.id ? `act-post-${linkedPost.id}` : `act-me-${i}`,
+                        postId: linkedPost?.id || null,
+                      });
+                    }}
                   >
                     <div className="activityHeader">
                       {renderAvatar(personalProfile, "activityAvatar")}
@@ -946,13 +984,17 @@ export default function HomeScreen({
                   <button
                     key={`a-${i}`}
                     className="activityCard"
-                    onClick={() =>
+                    onClick={() => {
+                      const linkedPost = getActivityPost(profilePageUser, a);
                       setActivityOpen({
                         user: profilePageUser,
                         activity: a,
-                        key: `act-${profilePageUser.id}-${i}`,
-                      })
-                    }
+                        key: linkedPost?.id
+                          ? `act-post-${linkedPost.id}`
+                          : `act-${profilePageUser.id}-${i}`,
+                        postId: linkedPost?.id || null,
+                      });
+                    }}
                   >
                     <div className="activityHeader">
                       {renderAvatar(profilePageUser, "activityAvatar")}
@@ -1033,9 +1075,13 @@ export default function HomeScreen({
               <button
                 className={`focusBtn iconBtn ${activityLiked[activityOpen.key] ? "liked" : ""}`}
                 aria-label="Like"
-                onClick={() =>
-                  setActivityLiked((prev) => ({ ...prev, [activityOpen.key]: !prev[activityOpen.key] }))
-                }
+                onClick={() => {
+                  const nextLiked = !activityLiked[activityOpen.key];
+                  setActivityLiked((prev) => ({ ...prev, [activityOpen.key]: nextLiked }));
+                  if (activityOpen.postId) {
+                    onTogglePostLike?.(activityOpen.postId, nextLiked);
+                  }
+                }}
               >
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path
@@ -1058,7 +1104,10 @@ export default function HomeScreen({
                   setActivityReplyDrafts((prev) => ({ ...prev, [activityOpen.key]: e.target.value }))
                 }
               />
-              <button className="replySend" onClick={() => sendActivityReply(activityOpen.key)}>
+              <button
+                className="replySend"
+                onClick={() => sendActivityReply(activityOpen.key, activityOpen.postId)}
+              >
                 Send
               </button>
             </div>
@@ -1152,10 +1201,7 @@ export default function HomeScreen({
         {shownPosts.map((post) => {
           const persistedReplies = (post.comments || [])
             .filter((comment) => comment?.body)
-            .map((comment) => ({
-              author: comment.author || post.author || "User",
-              text: comment.body,
-            }));
+            .map((comment) => toReplyModel(comment, post.author || "User"));
           const localReplies = (postRepliesById[post.id] || []).map((text) => ({
             author: selfLabel,
             text,
@@ -1282,24 +1328,39 @@ export default function HomeScreen({
                   ? combinedReplies
                   : combinedReplies.slice(0, 1)
                 ).map((reply, idx) => (
-                  <div key={`${post.id}-reply-${idx}`} className="replyItem">
+                  <div key={`${post.id}-reply-${reply.id || idx}`} className="replyItem">
                     <span className="replyAuthor">
                       {reply.author === "You" ? selfLabel : reply.author}
                     </span>
                     <span className="replyText">{reply.text}</span>
                     {(() => {
-                      const replyKey = `post-${post.id}-${idx}`;
+                      const replyKey = reply.id ? `comment-${reply.id}` : `post-${post.id}-${idx}`;
+                      const effectiveReplyLiked = replyLikes[replyKey] ?? Boolean(reply.likedByMe);
+                      const nestedReplies = [
+                        ...((reply.replies || []).map((nested) => ({
+                          id: nested.id || null,
+                          author: nested.author || selfLabel,
+                          text: nested.text || nested.body || "",
+                          likedByMe: Boolean(nested.likedByMe),
+                        })) || []),
+                        ...((replyRepliesByKey[replyKey] || []).map((text) => ({
+                          id: null,
+                          author: selfLabel,
+                          text,
+                          likedByMe: false,
+                        })) || []),
+                      ];
                       return (
                         <>
                           <div className="replyActionsRow">
                             <button
-                              className={`replyActionBtn ${replyLikes[replyKey] ? "active" : ""}`}
+                              className={`replyActionBtn ${effectiveReplyLiked ? "active" : ""}`}
                               onClick={(e) => {
                                 e.stopPropagation();
-                                toggleReplyLike(replyKey);
+                                toggleReplyLike(replyKey, effectiveReplyLiked, reply.id);
                               }}
                             >
-                              ♥ {replyLikes[replyKey] ? "Liked" : "Like"}
+                              ♥ {effectiveReplyLiked ? "Liked" : "Like"}
                             </button>
                             <button
                               className="replyActionBtn"
@@ -1330,36 +1391,41 @@ export default function HomeScreen({
                               />
                               <button
                                 className="replySend"
-                                onClick={() => sendReplyToReply(replyKey)}
+                                onClick={() => sendReplyToReply(replyKey, post.id, reply.id)}
                               >
                                 Send
                               </button>
                             </div>
                           )}
-                          {replyRepliesByKey[replyKey]?.length > 0 && (
+                          {nestedReplies.length > 0 && (
                             <div className="replyThread">
                               {(postExpandedReplies[post.id]
-                                ? replyRepliesByKey[replyKey]
-                                : replyRepliesByKey[replyKey].slice(0, 1)
-                              ).map((r, rIdx) => (
-                                <div key={`${replyKey}-sub-${rIdx}`} className="replyItem nested">
-                                  <span className="replyAuthor">{selfLabel}</span>
-                                  <span className="replyText">{r}</span>
+                                ? nestedReplies
+                                : nestedReplies.slice(0, 1)
+                              ).map((r, rIdx) => {
+                                const nestedKey = r.id ? `comment-${r.id}` : `${replyKey}-sub-${rIdx}`;
+                                const nestedLiked = replyLikes[nestedKey] ?? Boolean(r.likedByMe);
+                                return (
+                                <div key={nestedKey} className="replyItem nested">
+                                  <span className="replyAuthor">
+                                    {r.author === "You" ? selfLabel : r.author}
+                                  </span>
+                                  <span className="replyText">{r.text}</span>
                                   <div className="replyActionsRow">
                                     <button
                                       className={`replyActionBtn ${
-                                        replyLikes[`${replyKey}-sub-${rIdx}`] ? "active" : ""
+                                        nestedLiked ? "active" : ""
                                       }`}
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        toggleReplyLike(`${replyKey}-sub-${rIdx}`);
+                                        toggleReplyLike(nestedKey, nestedLiked, r.id);
                                       }}
                                     >
-                                      ♥ {replyLikes[`${replyKey}-sub-${rIdx}`] ? "Liked" : "Like"}
+                                      ♥ {nestedLiked ? "Liked" : "Like"}
                                     </button>
                                   </div>
                                 </div>
-                              ))}
+                              )})}
                             </div>
                           )}
                         </>
@@ -1402,10 +1468,7 @@ export default function HomeScreen({
           const postId = p.postId || null;
           const persistedReplies = (p.comments || [])
             .filter((comment) => comment?.body)
-            .map((comment) => ({
-              author: comment.author || p.name || "User",
-              text: comment.body,
-            }));
+            .map((comment) => toReplyModel(comment, p.name || "User"));
           const localReplies = (repliesById[p.id] || []).map((text) => ({
             author: selfLabel,
             text,
@@ -1538,24 +1601,39 @@ export default function HomeScreen({
                   ? combinedReplies
                   : combinedReplies.slice(0, 1)
                 ).map((reply, idx) => (
-                  <div key={`${p.id}-reply-${idx}`} className="replyItem">
+                  <div key={`${p.id}-reply-${reply.id || idx}`} className="replyItem">
                     <span className="replyAuthor">
                       {reply.author === "You" ? selfLabel : reply.author}
                     </span>
                     <span className="replyText">{reply.text}</span>
                     {(() => {
-                      const replyKey = `feed-${p.id}-${idx}`;
+                      const replyKey = reply.id ? `comment-${reply.id}` : `feed-${p.id}-${idx}`;
+                      const effectiveReplyLiked = replyLikes[replyKey] ?? Boolean(reply.likedByMe);
+                      const nestedReplies = [
+                        ...((reply.replies || []).map((nested) => ({
+                          id: nested.id || null,
+                          author: nested.author || selfLabel,
+                          text: nested.text || nested.body || "",
+                          likedByMe: Boolean(nested.likedByMe),
+                        })) || []),
+                        ...((replyRepliesByKey[replyKey] || []).map((text) => ({
+                          id: null,
+                          author: selfLabel,
+                          text,
+                          likedByMe: false,
+                        })) || []),
+                      ];
                       return (
                         <>
                           <div className="replyActionsRow">
                             <button
-                              className={`replyActionBtn ${replyLikes[replyKey] ? "active" : ""}`}
+                              className={`replyActionBtn ${effectiveReplyLiked ? "active" : ""}`}
                               onClick={(e) => {
                                 e.stopPropagation();
-                                toggleReplyLike(replyKey);
+                                toggleReplyLike(replyKey, effectiveReplyLiked, reply.id);
                               }}
                             >
-                              ♥ {replyLikes[replyKey] ? "Liked" : "Like"}
+                              ♥ {effectiveReplyLiked ? "Liked" : "Like"}
                             </button>
                             <button
                               className="replyActionBtn"
@@ -1586,36 +1664,41 @@ export default function HomeScreen({
                               />
                               <button
                                 className="replySend"
-                                onClick={() => sendReplyToReply(replyKey)}
+                                onClick={() => sendReplyToReply(replyKey, postId, reply.id)}
                               >
                                 Send
                               </button>
                             </div>
                           )}
-                          {replyRepliesByKey[replyKey]?.length > 0 && (
+                          {nestedReplies.length > 0 && (
                             <div className="replyThread">
                               {(expandedReplies[p.id]
-                                ? replyRepliesByKey[replyKey]
-                                : replyRepliesByKey[replyKey].slice(0, 1)
-                              ).map((r, rIdx) => (
-                                <div key={`${replyKey}-sub-${rIdx}`} className="replyItem nested">
-                                  <span className="replyAuthor">{selfLabel}</span>
-                                  <span className="replyText">{r}</span>
+                                ? nestedReplies
+                                : nestedReplies.slice(0, 1)
+                              ).map((r, rIdx) => {
+                                const nestedKey = r.id ? `comment-${r.id}` : `${replyKey}-sub-${rIdx}`;
+                                const nestedLiked = replyLikes[nestedKey] ?? Boolean(r.likedByMe);
+                                return (
+                                <div key={nestedKey} className="replyItem nested">
+                                  <span className="replyAuthor">
+                                    {r.author === "You" ? selfLabel : r.author}
+                                  </span>
+                                  <span className="replyText">{r.text}</span>
                                   <div className="replyActionsRow">
                                     <button
                                       className={`replyActionBtn ${
-                                        replyLikes[`${replyKey}-sub-${rIdx}`] ? "active" : ""
+                                        nestedLiked ? "active" : ""
                                       }`}
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        toggleReplyLike(`${replyKey}-sub-${rIdx}`);
+                                        toggleReplyLike(nestedKey, nestedLiked, r.id);
                                       }}
                                     >
-                                      ♥ {replyLikes[`${replyKey}-sub-${rIdx}`] ? "Liked" : "Like"}
+                                      ♥ {nestedLiked ? "Liked" : "Like"}
                                     </button>
                                   </div>
                                 </div>
-                              ))}
+                              )})}
                             </div>
                           )}
                         </>

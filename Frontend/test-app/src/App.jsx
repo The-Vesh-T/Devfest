@@ -71,6 +71,15 @@ const DEFAULT_BIOMETRICS = {
   weightLbs: "",
   weightKg: "",
 }
+const DEFAULT_MICRONUTRIENTS = {
+  fiberG: "",
+  sodiumMg: "",
+  vitaminDIU: "",
+  ironMg: "",
+  potassiumMg: "",
+  magnesiumMg: "",
+  calciumMg: "",
+}
 
 const toSafeNumber = (value) => {
   const n = Number(value)
@@ -138,6 +147,7 @@ export default function App() {
   const [mealEntries, setMealEntries] = useState([])
   const [nutritionGoals, setNutritionGoals] = useState(DEFAULT_NUTRITION_GOALS)
   const [biometrics, setBiometrics] = useState(DEFAULT_BIOMETRICS)
+  const [micronutrients, setMicronutrients] = useState(DEFAULT_MICRONUTRIENTS)
   const [selectedDate, setSelectedDate] = useState(() => new Date())
 
   const isWorkoutTab = tab === "workouts"
@@ -147,6 +157,7 @@ export default function App() {
   const favoriteCommonMealsStorageKey = `favorite_common_meals_${currentUserId}`
   const nutritionGoalsStorageKey = `nutrition_goals_${currentUserId}`
   const biometricsStorageKey = `biometrics_${currentUserId}`
+  const micronutrientsStorageKey = `micronutrients_${currentUserId}`
   const selectedDateKey = useMemo(() => toDateKey(selectedDate), [selectedDate])
 
   const meals = useMemo(() => [...mealEntries], [mealEntries])
@@ -333,6 +344,34 @@ export default function App() {
     if (typeof window === "undefined") return
     window.localStorage.setItem(biometricsStorageKey, JSON.stringify(biometrics))
   }, [biometrics, biometricsStorageKey])
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    try {
+      const raw = window.localStorage.getItem(micronutrientsStorageKey)
+      if (!raw) {
+        setMicronutrients(DEFAULT_MICRONUTRIENTS)
+        return
+      }
+      const parsed = JSON.parse(raw)
+      setMicronutrients({
+        fiberG: `${parsed?.fiberG ?? ""}`,
+        sodiumMg: `${parsed?.sodiumMg ?? ""}`,
+        vitaminDIU: `${parsed?.vitaminDIU ?? ""}`,
+        ironMg: `${parsed?.ironMg ?? ""}`,
+        potassiumMg: `${parsed?.potassiumMg ?? ""}`,
+        magnesiumMg: `${parsed?.magnesiumMg ?? ""}`,
+        calciumMg: `${parsed?.calciumMg ?? ""}`,
+      })
+    } catch {
+      setMicronutrients(DEFAULT_MICRONUTRIENTS)
+    }
+  }, [micronutrientsStorageKey])
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    window.localStorage.setItem(micronutrientsStorageKey, JSON.stringify(micronutrients))
+  }, [micronutrients, micronutrientsStorageKey])
   useEffect(() => {
     if (!isAuthenticated) {
       setCustomFoods([])
@@ -531,6 +570,18 @@ export default function App() {
     })
   }
 
+  const handleSaveMicronutrients = (nextMicronutrients) => {
+    setMicronutrients({
+      fiberG: `${nextMicronutrients?.fiberG ?? ""}`,
+      sodiumMg: `${nextMicronutrients?.sodiumMg ?? ""}`,
+      vitaminDIU: `${nextMicronutrients?.vitaminDIU ?? ""}`,
+      ironMg: `${nextMicronutrients?.ironMg ?? ""}`,
+      potassiumMg: `${nextMicronutrients?.potassiumMg ?? ""}`,
+      magnesiumMg: `${nextMicronutrients?.magnesiumMg ?? ""}`,
+      calciumMg: `${nextMicronutrients?.calciumMg ?? ""}`,
+    })
+  }
+
   const handleCreatePost = async (post) => {
     const localPost = toLocalPost({
       author: sessionUser?.displayName || sessionUser?.name || "You",
@@ -690,6 +741,8 @@ export default function App() {
                     onSaveNutritionGoals={handleSaveNutritionGoals}
                     biometrics={biometrics}
                     onSaveBiometrics={handleSaveBiometrics}
+                    micronutrients={micronutrients}
+                    onSaveMicronutrients={handleSaveMicronutrients}
                     usePlaceholderPosts={!isSupabaseConfigured}
                   />
                 )}

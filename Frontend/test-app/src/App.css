@@ -240,6 +240,18 @@ body.wk-sheet-open .bottomNav{
 .navIcon { font-size: 18px; line-height: 1; }
 .navLabel { font-size: 12px; font-weight: 950; }
 
+.navIconSvg {
+  width: 20px;
+  height: 20px;
+  color: #f2f2f2;
+}
+
+.navIconSvg svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
 /* FAB */
 .fab{
   position: absolute;

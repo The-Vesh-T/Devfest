@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "../HomeScreen.css";
 
 const feed = [
@@ -52,9 +52,17 @@ const initialPosts = [
   },
 ];
 
-export default function HomeScreen({ posts: externalPosts, onLogout }) {
-  const demoEmail = "demo@devfest.app";
-  const demoPassword = "DemoPass123!";
+export default function HomeScreen({ posts: externalPosts, onLogout, currentUser }) {
+  const activeUser = currentUser ?? {
+    name: "Aisha Patel",
+    displayName: "Aisha",
+    handle: "@aisha",
+    email: "demo@devfest.app",
+    password: "DemoPass123!",
+    bio: "Strength + mobility. Learning to love rest days.",
+  };
+  const accountEmail = activeUser.email;
+  const accountPassword = activeUser.password;
   const [homeRange, setHomeRange] = useState("weekly");
   const [profileRange, setProfileRange] = useState("weekly");
   const [personalRange, setPersonalRange] = useState("weekly");
@@ -97,7 +105,11 @@ export default function HomeScreen({ posts: externalPosts, onLogout }) {
     micro: false,
   });
   const [userQuery, setUserQuery] = useState("");
-  const [personalBio, setPersonalBio] = useState("Strength + mobility. Learning to love rest days.");
+  const [personalBio, setPersonalBio] = useState(activeUser.bio);
+
+  useEffect(() => {
+    setPersonalBio(activeUser.bio);
+  }, [activeUser.bio]);
 
   const focusCard = (id) => setFocusedId((prev) => (prev === id ? null : id));
   const focusPost = (id) => setPostFocusedId((prev) => (prev === id ? null : id));
@@ -351,14 +363,14 @@ export default function HomeScreen({ posts: externalPosts, onLogout }) {
     },
   ];
   const personalProfile = {
-    name: "Aisha Patel",
-    handle: "@aisha",
+    name: activeUser.name,
+    handle: activeUser.handle,
     bio: personalBio,
     followers: 412,
     following: 198,
     streak: 12,
     workouts: 86,
-    avatar: "A",
+    avatar: (activeUser.displayName || activeUser.name || "A").charAt(0).toUpperCase(),
     consistency: [
       { day: "Sat", status: "yellow" },
       { day: "Sun", status: "green" },
@@ -438,7 +450,7 @@ export default function HomeScreen({ posts: externalPosts, onLogout }) {
               <span>72%</span>
             </div>
             <div className="profileText">
-              <div className="profileName">Aisha</div>
+              <div className="profileName">{activeUser.displayName}</div>
               <div className="profileMeta">4 goals hit</div>
             </div>
           </button>
@@ -496,14 +508,14 @@ export default function HomeScreen({ posts: externalPosts, onLogout }) {
                     className="input"
                     type="email"
                     autoComplete="off"
-                    value={demoEmail}
+                    value={accountEmail}
                     readOnly
                   />
                   <input
                     className="input"
                     type="password"
                     autoComplete="off"
-                    value={demoPassword}
+                    value={accountPassword}
                     readOnly
                   />
                   <button
@@ -631,7 +643,7 @@ export default function HomeScreen({ posts: externalPosts, onLogout }) {
               <div>
                 <div className="profileTitle">{personalProfile.name}</div>
                 <div className="profileHandle">{personalProfile.handle}</div>
-                <div className="profileEmail">{demoEmail}</div>
+                <div className="profileEmail">{accountEmail}</div>
               </div>
             </div>
             <div className="profileBio">{personalProfile.bio}</div>
@@ -1014,7 +1026,7 @@ export default function HomeScreen({ posts: externalPosts, onLogout }) {
       <div className="homeHeader">
         <div>
           <div className="homeKicker">Good morning</div>
-          <h2 className="screenTitle homeTitle">Aisha</h2>
+          <h2 className="screenTitle homeTitle">{activeUser.displayName}</h2>
         </div>
         <div className="streakBadge">
           <div className="streakNum">12</div>

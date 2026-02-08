@@ -1,27 +1,61 @@
-# Devfest
-Devfest project
+# Valetudo
 
-GITHUB GUIDE
-GET REPO
-git clone https://github.com/The-Vesh-T/Devfest.git
-cd repo
+Valetudo is a **mobile-first fitness app** built for DevFest.
 
-CHECK PROGRESS
-git status        # what changed, what’s staged
-git log --oneline # clean commit history
-git diff          # unstaged changes
-git diff --staged # staged changes
+Think Hevy (workouts) + MyFitnessPal (food) with a social / community vibe layered on top.
 
-PUSH PULL
-git push origin main   
-git pull origin main   
+The goal: make health tracking feel less lonely and more alive.
 
-BRANCHES
-git branch                 
-git checkout -b frontend   
-git checkout main          
-MERGE BRANCH
-git checkout main
-git pull origin main
-git merge frontend
+---
 
+What it does
+
+* Workouts
+
+  * Hevy-style routines
+  * Quick start workouts
+  * Clean dark mode UI
+
+* Food logging
+
+  * Calories + macros (base structure)
+  * Built to plug into a food database
+
+* Social feed (WIP)
+
+  * Friends activity
+  * Motivation without being annoying
+
+---
+
+**Tech Stack**
+
+**Frontend**
+* React (Vite)
+* JavaScript
+* Plain CSS (no Tailwind)
+* Mobile-first layout
+
+**Backend**
+* FastAPI (Python)
+* REST APIs for food + workouts
+
+**Other**
+* Git + GitHub (branch-based workflow)
+* Tested on real phones via local network / ngrok
+
+---
+
+## Run it
+
+```bash
+npm install
+npm run dev
+
+# open on your phone (same WiFi)
+npm run dev -- --host
+```
+
+---
+
+Built during **DevFest** 🚀

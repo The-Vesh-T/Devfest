@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { BrowserMultiFormatReader } from "@zxing/browser";
 import "./FoodAddSheet.css";
 
 export default function FoodAddSheet({
@@ -21,11 +22,13 @@ export default function FoodAddSheet({
   const [cameraError, setCameraError] = useState("");
   const [barcodeError, setBarcodeError] = useState("");
   const [barcodeResult, setBarcodeResult] = useState("");
+  const [manualBarcode, setManualBarcode] = useState("");
   const [capturedImage, setCapturedImage] = useState("");
   const [scanLookup, setScanLookup] = useState(null);
   const scanLockRef = useRef(false);
   const lastDetectedCodeRef = useRef("");
   const lastAddedCodeRef = useRef("");
+  const zxingRef = useRef(null);
   const videoRef = useRef(null);
   const streamRef = useRef(null);
 
@@ -56,6 +59,7 @@ export default function FoodAddSheet({
     setBarcodeError("");
     lastDetectedCodeRef.current = "";
     lastAddedCodeRef.current = "";
+    setManualBarcode("");
 
     const startCamera = async () => {
       try {
@@ -89,16 +93,15 @@ export default function FoodAddSheet({
 
   useEffect(() => {
     if (!cameraOpen || cameraMode !== "barcode") return;
-    if (!("BarcodeDetector" in window)) {
-      setBarcodeError("Barcode scanning not supported in this browser.");
-      return;
-    }
 
     let cancelled = false;
     scanLockRef.current = false;
-    const detector = new window.BarcodeDetector({
-      formats: ["ean_13", "ean_8", "upc_a", "upc_e", "code_128", "code_39", "qr_code"],
-    });
+    const detector =
+      "BarcodeDetector" in window
+        ? new window.BarcodeDetector({
+            formats: ["ean_13", "ean_8", "upc_a", "upc_e", "code_128", "code_39", "qr_code"],
+          })
+        : null;
 
     const scanLoop = async () => {
       if (cancelled || !videoRef.current || scanLockRef.current) return;
@@ -107,20 +110,22 @@ export default function FoodAddSheet({
         return;
       }
       try {
-        const codes = await detector.detect(videoRef.current);
-        if (codes && codes.length > 0) {
-          const code = codes[0].rawValue || "";
-          if (!code) return;
-          if (code === lastDetectedCodeRef.current) {
+        if (detector) {
+          const codes = await detector.detect(videoRef.current);
+          if (codes && codes.length > 0) {
+            const code = codes[0].rawValue || "";
+            if (!code) return;
+            if (code === lastDetectedCodeRef.current) {
+              closeCamera();
+              return;
+            }
+            lastDetectedCodeRef.current = code;
+            scanLockRef.current = true;
+            setBarcodeResult(code);
+            setScanLookup({ status: "loading", code });
             closeCamera();
             return;
           }
-          lastDetectedCodeRef.current = code;
-          scanLockRef.current = true;
-          setBarcodeResult(code);
-          setScanLookup({ status: "loading", code });
-          closeCamera();
-          return;
         }
       } catch {
         setBarcodeError("Unable to scan barcode. Try more light or a clearer angle.");
@@ -128,11 +133,44 @@ export default function FoodAddSheet({
       setTimeout(scanLoop, 500);
     };
 
-    scanLoop();
+    if (detector) {
+      scanLoop();
+    } else {
+      setBarcodeError("Using fallback scanner (slower on iOS).");
+    }
 
     return () => {
       cancelled = true;
       scanLockRef.current = false;
+    };
+  }, [cameraOpen, cameraMode]);
+
+  useEffect(() => {
+    if (!cameraOpen || cameraMode !== "barcode") return;
+    if ("BarcodeDetector" in window) return;
+    if (!videoRef.current) return;
+
+    const reader = new BrowserMultiFormatReader();
+    zxingRef.current = reader;
+
+    reader.decodeFromVideoElement(videoRef.current, (result) => {
+      if (!result || scanLockRef.current) return;
+      const code = result.getText();
+      if (!code) return;
+      if (code === lastDetectedCodeRef.current) {
+        closeCamera();
+        return;
+      }
+      lastDetectedCodeRef.current = code;
+      scanLockRef.current = true;
+      setBarcodeResult(code);
+      setScanLookup({ status: "loading", code });
+      closeCamera();
+    });
+
+    return () => {
+      reader.reset();
+      zxingRef.current = null;
     };
   }, [cameraOpen, cameraMode]);
 
@@ -446,6 +484,30 @@ export default function FoodAddSheet({
               <div className="cameraHint">
                 {cameraMode === "barcode" ? "Center the barcode in the frame." : "Frame your food and tap to capture."}
               </div>
+              {cameraMode === "barcode" ? (
+                <div className="barcodeManual">
+                  <input
+                    className="barcodeInput"
+                    placeholder="Enter barcode manually"
+                    inputMode="numeric"
+                    value={manualBarcode}
+                    onChange={(e) => setManualBarcode(e.target.value)}
+                  />
+                  <button
+                    className="barcodeLookup"
+                    type="button"
+                    onClick={() => {
+                      const code = manualBarcode.trim();
+                      if (!code) return;
+                      setBarcodeResult(code);
+                      setScanLookup({ status: "loading", code });
+                      closeCamera();
+                    }}
+                  >
+                    Look up
+                  </button>
+                </div>
+              ) : null}
               {cameraMode === "photo" && !cameraError ? (
                 <button
                   className="cameraCapture"

@@ -854,7 +854,7 @@
   border-top-left-radius: 22px;
   border-top-right-radius: 22px;
   border: 1px solid rgba(255,255,255,0.10);
-  padding: 10px 14px 0;
+  padding: 8px 14px 0;
   box-sizing: border-box;
   max-height: 90vh;
   min-height: 60vh;
@@ -873,19 +873,19 @@
 }
 
 .wkSheetHandle{
-  width: 52px;
-  height: 6px;
+  width: 46px;
+  height: 5px;
   border-radius: 999px;
   background: rgba(255,255,255,0.18);
-  margin: 6px auto 10px;
+  margin: 6px auto 8px;
 }
 
 .wkSheetHeader{
   display:grid;
   grid-template-columns: 1fr auto 1fr;
   align-items:center;
-  gap: 10px;
-  margin-bottom: 12px;
+  gap: 8px;
+  margin-bottom: 10px;
 }
 
 .wkSheetTitle{
@@ -921,8 +921,8 @@
 
 .wkSheetBody{
   display:grid;
-  gap: 10px;
-  padding: 0 0 18px;
+  gap: 6px;
+  padding: 0 14px 16px;
   overflow-y: auto;
   min-height: 0;
   flex: 1;
@@ -943,37 +943,47 @@
 
 .wkFieldLabel{
   color: rgba(255,255,255,0.60);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 800;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  margin-top: 2px;
 }
 
 .wkInput{
   width: 100%;
-  padding: 13px 14px;
+  padding: 9px 12px;
   border-radius: 12px;
   border: 1px solid rgba(255,255,255,0.12);
   background: rgba(0,0,0,0.24);
   color: rgba(255,255,255,0.92);
+  box-sizing: border-box;
+  font-size: 14px;
+  line-height: 1.25;
 }
 
 .wkCreateSectionLabel{
-  margin-top: 10px;
+  margin-top: 8px;
   color: rgba(255,255,255,0.70);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 900;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
 }
 
 .wkExerciseInputRow{
   display: flex;
   gap: 8px;
   align-items: center;
+  flex-wrap: wrap;
+  margin-top: 2px;
 }
 
 .wkExerciseList{
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 4px;
+  margin-top: 2px;
 }
 
 .wkExerciseTag{
@@ -999,7 +1009,7 @@
   border-radius: 14px;
   border: 1px solid rgba(255,255,255,0.10);
   background: rgba(255,255,255,0.03);
-  padding: 12px;
+  padding: 9px 12px;
   display:grid;
   gap: 8px;
 }
@@ -1011,13 +1021,26 @@
 }
 
 .wkAddExerciseBtn{
-  width: 100%;
-  padding: 11px 13px;
+  width: auto;
+  min-width: 96px;
+  height: 38px;
+  padding: 0 14px;
   border-radius: 12px;
   border: 1px solid rgba(255,255,255,0.12);
-  background: rgba(255,255,255,0.05);
+  background: rgba(255,255,255,0.08);
   color: rgba(255,255,255,0.90);
   font-weight: 950;
-  text-align: left;
+  text-align: center;
   cursor:pointer;
+}
+
+@media (max-width: 520px) {
+  .wkExerciseInputRow{
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .wkAddExerciseBtn{
+    width: 100%;
+  }
 }

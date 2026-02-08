@@ -1,7 +1,14 @@
 import { createClient } from "@supabase/supabase-js"
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+const readEnv = (key) => {
+  const raw = import.meta.env[key]
+  if (!raw) return ""
+  const trimmed = `${raw}`.trim()
+  return trimmed.replace(/^['"]|['"]$/g, "")
+}
+
+const supabaseUrl = readEnv("VITE_SUPABASE_URL")
+const supabaseAnonKey = readEnv("VITE_SUPABASE_ANON_KEY")
 const isPlaceholder = (value = "") =>
   value.includes("YOUR_PROJECT_ID") || value.includes("YOUR_SUPABASE_ANON_KEY")
 
@@ -13,6 +20,10 @@ export const supabaseStatus = {
 
 export const isSupabaseConfigured =
   Boolean(supabaseUrl && supabaseAnonKey) && !supabaseStatus.usingPlaceholders
+
+if (!isSupabaseConfigured) {
+  console.warn("Supabase is not configured. Check VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in environment variables.", supabaseStatus)
+}
 
 export const supabase = isSupabaseConfigured
   ? createClient(supabaseUrl, supabaseAnonKey, {

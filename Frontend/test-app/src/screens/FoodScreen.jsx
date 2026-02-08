@@ -1,7 +1,7 @@
 import { useState } from "react";
 import "./FoodScreen.css";
 
-export default function FoodScreen({ meals, onEditMeal, onDeleteMeal }) {
+export default function FoodScreen({ meals, onEditMeal, onDeleteMeal, nutritionGoals }) {
   const safeMeals = Array.isArray(meals) ? meals : [];
   const toNumber = (value) => {
     const n = Number(value);
@@ -12,7 +12,13 @@ export default function FoodScreen({ meals, onEditMeal, onDeleteMeal }) {
   const totalProtein = safeMeals.reduce((sum, meal) => sum + toNumber(meal?.protein), 0);
   const totalCarbs = safeMeals.reduce((sum, meal) => sum + toNumber(meal?.carbs), 0);
   const totalFat = safeMeals.reduce((sum, meal) => sum + toNumber(meal?.fat), 0);
-  const goal = 1800;
+  const goal = Math.max(1, toNumber(nutritionGoals?.calories) || 1800);
+  const proteinPct = Math.max(0, toNumber(nutritionGoals?.proteinPct));
+  const carbsPct = Math.max(0, toNumber(nutritionGoals?.carbsPct));
+  const fatPct = Math.max(0, toNumber(nutritionGoals?.fatPct));
+  const proteinGoal = (goal * proteinPct) / 100 / 4;
+  const carbsGoal = (goal * carbsPct) / 100 / 4;
+  const fatGoal = (goal * fatPct) / 100 / 9;
   const remaining = Math.max(goal - calories, 0);
   const overBy = Math.max(calories - goal, 0);
   const isOverGoal = overBy > 0;
@@ -103,15 +109,15 @@ export default function FoodScreen({ meals, onEditMeal, onDeleteMeal }) {
         </div>
         <div className="miniStat protein">
           <div className="miniNum">{Math.round(totalProtein)}g</div>
-          <div className="miniLabel">protein</div>
+          <div className="miniLabel">protein / {Math.round(proteinGoal)}g</div>
         </div>
         <div className="miniStat carbs">
           <div className="miniNum">{Math.round(totalCarbs)}g</div>
-          <div className="miniLabel">carbs</div>
+          <div className="miniLabel">carbs / {Math.round(carbsGoal)}g</div>
         </div>
         <div className="miniStat fat">
           <div className="miniNum">{Math.round(totalFat)}g</div>
-          <div className="miniLabel">fat</div>
+          <div className="miniLabel">fat / {Math.round(fatGoal)}g</div>
         </div>
       </div>
 

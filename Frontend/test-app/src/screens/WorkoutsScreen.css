@@ -866,6 +866,16 @@
   -webkit-overflow-scrolling: touch;
 }
 
+.wkRoutineSheet{
+  max-height: 100dvh;
+  height: 100dvh;
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
 .wkCreateSheet{
   min-height: 64vh;
   max-height: 82vh;
@@ -924,7 +934,7 @@
 .wkSheetBody{
   display:grid;
   gap: 6px;
-  padding: 0 14px 18px;
+  padding: 0 14px 120px;
   overflow-y: auto;
   min-height: 0;
   flex: 1;
@@ -940,6 +950,11 @@
   padding: 10px 14px calc(16px + env(safe-area-inset-bottom));
   border-top: 1px solid rgba(255,255,255,0.08);
   background: #12151b;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 60;
 }
 
 

@@ -353,7 +353,7 @@ function RoutineDetailsSheet({ routine, open, onClose, onAddToWorkout }) {
 
   return (
     <div className="wkSheetBackdrop" onClick={onClose} role="presentation">
-      <div className="wkSheet" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+      <div className="wkSheet wkRoutineSheet" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
         <div className="wkSheetHandle" />
         <div className="wkSheetHeader">
           <button className="wkSheetTextBtn" onClick={onClose}>← Back</button>
@@ -731,12 +731,19 @@ export default function WorkoutsScreen() {
   const [activeWorkout, setActiveWorkout] = useState(null);
   const [completeSummary, setCompleteSummary] = useState(null);
   const [actionsOpen, setActionsOpen] = useState(false);
+  const anySheetOpen = createOpen || discoverOpen || routineDetailsOpen || actionsOpen;
 
   useEffect(() => {
     const handleOpenActions = () => setActionsOpen(true);
     window.addEventListener("open-workout-actions", handleOpenActions);
     return () => window.removeEventListener("open-workout-actions", handleOpenActions);
   }, []);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return undefined;
+    document.body.classList.toggle("wk-sheet-open", anySheetOpen);
+    return () => document.body.classList.remove("wk-sheet-open");
+  }, [anySheetOpen]);
 
   function updateRoutines(updater) {
     setRoutines((prev) => {

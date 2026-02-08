@@ -6,6 +6,12 @@ body {
   color: #f2f2f2;
 }
 
+body.wk-sheet-open .fab,
+body.wk-sheet-open .bottomNav{
+  visibility: hidden;
+  pointer-events: none;
+}
+
 /* Center phone */
 .stage {
   height: 100%;

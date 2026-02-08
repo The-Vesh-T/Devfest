@@ -162,18 +162,25 @@ export default function FoodScreen({ meals, onEditMeal, onDeleteMeal }) {
               </button>
             </div>
 
-            <input
-              className="input"
-              value={editName}
-              onChange={(e) => setEditName(e.target.value)}
-              placeholder="Meal name"
-            />
-            <input
-              className="input"
-              value={editDetail}
-              onChange={(e) => setEditDetail(e.target.value)}
-              placeholder="Details"
-            />
+            <div className="mealEditForm">
+              <label className="mealEditField mealEditFieldFull">
+                <span className="mealEditLabel">Meal name</span>
+                <input
+                  className="input"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  placeholder="Meal name"
+                />
+              </label>
+              <label className="mealEditField mealEditFieldFull">
+                <span className="mealEditLabel">Meal details</span>
+                <input
+                  className="input"
+                  value={editDetail}
+                  onChange={(e) => setEditDetail(e.target.value)}
+                  placeholder="Details"
+                />
+              </label>
             <div className="row mealEditMacroRow">
               <label className="mealEditField">
                 <span className="mealEditLabel">Calories (kcal)</span>
@@ -217,6 +224,7 @@ export default function FoodScreen({ meals, onEditMeal, onDeleteMeal }) {
                   inputMode="numeric"
                 />
               </label>
+            </div>
             </div>
 
             <div className="mealEditActions">

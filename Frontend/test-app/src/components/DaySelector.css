@@ -7,12 +7,18 @@
   top: 24px;
 }
 
+.dayHeader {
+  position: relative;
+  margin: 24px 16px 0;
+}
+
 .daySchedule {
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 10px;
-  margin: 54px 16px 0;
+  margin: 0 auto;
+  max-width: 240px;
 }
 
 .dayArrow {
@@ -24,11 +30,16 @@
   height: 34px;
   line-height: 0;
   font-size: 20px;
-  font-weight: 800;
+  font-weight: 900;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.dayArrow.disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 .dayArrowIcon {
@@ -37,7 +48,7 @@
   font-weight: 900;
 }
 
-.dayLabel {
+.dayLabelBtn {
   text-align: center;
   font-size: 18px;
   font-weight: 900;
@@ -49,6 +60,7 @@
   border: 1px solid rgba(125,211,252,0.35);
   background: rgba(125,211,252,0.12);
   line-height: 1.1;
+  cursor: pointer;
 }
 
 .dayArrow:active {
@@ -56,11 +68,117 @@
 }
 
 @media (max-width: 380px) {
-  .dayLabel {
+  .dayHeader {
+    margin: 22px 14px 0;
+  }
+  .dayLabelBtn {
     font-size: 16px;
   }
   .dayArrow {
     width: 30px;
     height: 30px;
   }
+}
+
+.dayCalendarBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: grid;
+  place-items: center;
+  z-index: 30;
+}
+
+.dayCalendarCard {
+  width: min(320px, 92vw);
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: #12151b;
+  padding: 12px;
+  box-shadow: 0 18px 50px rgba(0,0,0,0.45);
+}
+
+.dayCalendarHeader {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.dayCalendarTitle {
+  text-align: center;
+  font-weight: 900;
+  letter-spacing: 0.4px;
+}
+
+.dayCalendarNav {
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.04);
+  color: rgba(255,255,255,0.80);
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.dayCalendarNav.disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.dayCalendarWeekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.dayCalendarWeekday {
+  text-align: center;
+  font-size: 10px;
+  color: rgba(255,255,255,0.55);
+  font-weight: 800;
+  letter-spacing: 0.4px;
+}
+
+.dayCalendarGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.dayCalendarCell {
+  height: 30px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 800;
+  color: rgba(255,255,255,0.85);
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.dayCalendarCell.empty {
+  background: transparent;
+  border: 1px solid transparent;
+}
+
+.dayCalendarCell.disabled {
+  opacity: 0.35;
+  background: rgba(255,255,255,0.02);
+  border-color: rgba(255,255,255,0.05);
+}
+
+.dayCalendarCell.selected {
+  border-color: rgba(125,211,252,0.55);
+  background: rgba(125,211,252,0.22);
+  color: #e9f7ff;
 }

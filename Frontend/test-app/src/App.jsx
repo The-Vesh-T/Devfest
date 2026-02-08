@@ -11,12 +11,13 @@ import PostSheet from "./components/PostSheet";
 import HomeScreen from "./screens/HomeScreen";
 import FoodScreen from "./screens/FoodScreen";
 import WorkoutsScreen from "./screens/WorkoutsScreen";
+import logo from "./assets/devfest-logo.svg";
 
 const DEMO_EMAIL = "demo@devfest.app";
 const DEMO_PASSWORD = "DemoPass123!";
 
 export default function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [loginError, setLoginError] = useState("");
@@ -137,7 +138,10 @@ export default function App() {
           ) : (
             <main className="content loginContent">
               <div className="loginCard">
-                <h1 className="loginTitle">Valetudo</h1>
+                <div className="loginBrand">
+                  <img src={logo} alt="Valetudo logo" className="loginLogo" />
+                  <h1 className="loginTitle">Valetudo</h1>
+                </div>
                 <p className="loginSubtitle">Sign in to continue</p>
                 <form className="loginForm" onSubmit={handleLoginSubmit} autoComplete="off">
                   <input

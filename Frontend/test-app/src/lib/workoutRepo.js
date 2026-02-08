@@ -167,3 +167,51 @@ export const listLastExerciseSets = async ({ userId, exerciseNames }) => {
 
   return { data: output, error: null }
 }
+
+export const listExercisePRs = async ({ userId, exerciseNames }) => {
+  if (!isSupabaseConfigured || !userId) return { data: {}, error: null }
+
+  const requestedNames = (Array.isArray(exerciseNames) ? exerciseNames : [])
+    .map((name) => cleanText(name))
+    .filter(Boolean)
+
+  if (requestedNames.length === 0) return { data: {}, error: null }
+
+  const normalizedToRequested = requestedNames.reduce((acc, name) => {
+    const normalized = normalizeExerciseName(name)
+    if (!normalized) return acc
+    acc[normalized] = name
+    return acc
+  }, {})
+
+  const normalizedTargets = new Set(Object.keys(normalizedToRequested))
+  if (normalizedTargets.size === 0) return { data: {}, error: null }
+
+  const { data, error } = await supabase
+    .from("workout_set_entries")
+    .select("exercise_name, weight")
+    .eq("user_id", userId)
+    .not("weight", "is", null)
+    .order("created_at", { ascending: false })
+    .limit(5000)
+
+  if (error) return { data: {}, error }
+
+  const bestByRequestedName = {}
+  for (const row of data || []) {
+    const normalized = normalizeExerciseName(row.exercise_name)
+    if (!normalizedTargets.has(normalized)) continue
+    const requestedName = normalizedToRequested[normalized]
+    if (!requestedName) continue
+
+    const weight = Number(row.weight)
+    if (!Number.isFinite(weight) || weight <= 0) continue
+
+    const currentBest = Number(bestByRequestedName[requestedName]?.weight)
+    if (!Number.isFinite(currentBest) || weight > currentBest) {
+      bestByRequestedName[requestedName] = { weight }
+    }
+  }
+
+  return { data: bestByRequestedName, error: null }
+}

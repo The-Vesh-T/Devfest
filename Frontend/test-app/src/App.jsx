@@ -216,6 +216,9 @@ export default function App() {
     if (Number.isFinite(Number(summary.totalWeight))) {
       lines.push(`Total weight: ${Number(summary.totalWeight)} kg`)
     }
+    if (Number.isFinite(Number(summary.prCount)) && Number(summary.prCount) > 0) {
+      lines.push(`PRs hit: ${Number(summary.prCount)} 🏅`)
+    }
     if (Array.isArray(summary.exercises) && summary.exercises.length > 0) {
       lines.push(`Exercises: ${summary.exercises.join(", ")}`)
     }

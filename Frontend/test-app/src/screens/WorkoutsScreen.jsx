@@ -905,13 +905,15 @@ function WorkoutCompleteSheet({ open, summary, onDone, onPost }) {
           </div>
         ) : null}
         <div className="wkDoneHint">Want to post this workout to your feed?</div>
-        <button
-          className="wkDoneBtn"
-          onClick={() => onPost?.()}
-        >
-          Post this to your friends?
-        </button>
-        <button className="wkDoneBtn" onClick={onDone}>Done</button>
+        <div className="wkDoneActions">
+          <button
+            className="wkDoneBtn"
+            onClick={() => onPost?.()}
+          >
+            Post this to your friends?
+          </button>
+          <button className="wkDoneBtn" onClick={onDone}>Done</button>
+        </div>
       </div>
     </div>
   );
@@ -930,7 +932,7 @@ export default function WorkoutsScreen({ userId }) {
   const [actionsOpen, setActionsOpen] = useState(false);
   const [lastSets, setLastSets] = useState(loadLastSets);
   const [exercisePrs, setExercisePrs] = useState({});
-  const anySheetOpen = createOpen || discoverOpen || routineDetailsOpen || actionsOpen;
+  const anySheetOpen = createOpen || discoverOpen || routineDetailsOpen || actionsOpen || Boolean(completeSummary);
 
   useEffect(() => {
     const handleOpenActions = () => setActionsOpen(true);

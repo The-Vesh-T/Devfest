@@ -227,6 +227,22 @@
   padding-bottom: 8px;
 }
 
+/* Let All/Favorites meal rows span to panel margins instead of a narrow fixed width. */
+.foodAddBody > .mealTabPanel > .customList {
+  max-width: none;
+  margin: 0;
+}
+
+.foodAddBody > .mealTabPanel > .customList .sheetOption {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.foodAddBody > .mealTabPanel > .customList .rowBetween > div {
+  flex: 1;
+  min-width: 0;
+}
+
 .customStack .customList,
 .customStack .customFooter {
   max-width: 360px;

@@ -841,12 +841,12 @@
 
 /* ===== Create Routine sheet ===== */
 .wkSheetBackdrop{
-  position: absolute;
+  position: fixed;
   inset: 0;
   background: rgba(0,0,0,0.55);
   display:grid;
   align-items:end;
-  z-index: 30;
+  z-index: 50;
 }
 
 .wkSheet{
@@ -854,14 +854,20 @@
   border-top-left-radius: 22px;
   border-top-right-radius: 22px;
   border: 1px solid rgba(255,255,255,0.10);
-  padding: 10px 14px calc(16px + env(safe-area-inset-bottom));
+  padding: 10px 14px 0;
   box-sizing: border-box;
+  max-height: 90vh;
+  min-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 
 .wkCreateSheet{
   min-height: 64vh;
   max-height: 82vh;
-  overflow-y: auto;
+  overflow: hidden;
   padding-top: 8px;
   padding-bottom: 18px;
 }
@@ -916,8 +922,24 @@
 .wkSheetBody{
   display:grid;
   gap: 10px;
-  padding-bottom: 6px;
+  padding: 0 0 18px;
+  overflow-y: auto;
+  min-height: 0;
+  flex: 1;
+  -webkit-overflow-scrolling: touch;
 }
+
+.wkSheetBodyFlush{
+  padding-left: 14px;
+  padding-right: 14px;
+}
+
+.wkSheetFooter{
+  padding: 10px 14px calc(16px + env(safe-area-inset-bottom));
+  border-top: 1px solid rgba(255,255,255,0.08);
+  background: #12151b;
+}
+
 
 .wkFieldLabel{
   color: rgba(255,255,255,0.60);

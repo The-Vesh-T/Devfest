@@ -372,6 +372,7 @@
   padding-top: 0;
 }
 
+.sheetOption:hover {
   cursor: pointer;
 }
 

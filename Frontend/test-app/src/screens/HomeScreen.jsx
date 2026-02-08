@@ -52,7 +52,10 @@ const initialPosts = [
   },
 ];
 
-export default function HomeScreen({ posts: externalPosts }) {
+export default function HomeScreen({ posts: externalPosts, onLogout }) {
+  const [homeRange, setHomeRange] = useState("weekly");
+  const [profileRange, setProfileRange] = useState("weekly");
+  const [personalRange, setPersonalRange] = useState("weekly");
   const [postFocusedId, setPostFocusedId] = useState(null);
   const [postReplyId, setPostReplyId] = useState(null);
   const [postPulse, setPostPulse] = useState({ like: null });
@@ -75,6 +78,23 @@ export default function HomeScreen({ posts: externalPosts }) {
   const [expandedReplies, setExpandedReplies] = useState({});
   const [socialExpanded, setSocialExpanded] = useState(false);
   const [friendsExpanded, setFriendsExpanded] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [discoverOpen, setDiscoverOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [profilePageUser, setProfilePageUser] = useState(null);
+  const [followRequested, setFollowRequested] = useState({});
+  const [activityOpen, setActivityOpen] = useState(null);
+  const [activityLiked, setActivityLiked] = useState({});
+  const [activityReplyDrafts, setActivityReplyDrafts] = useState({});
+  const [activityRepliesByKey, setActivityRepliesByKey] = useState({});
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsExpanded, setSettingsExpanded] = useState({
+    profile: false,
+    biometrics: false,
+    goals: false,
+    micro: false,
+  });
+  const [userQuery, setUserQuery] = useState("");
 
   const focusCard = (id) => setFocusedId((prev) => (prev === id ? null : id));
   const focusPost = (id) => setPostFocusedId((prev) => (prev === id ? null : id));
@@ -85,6 +105,9 @@ export default function HomeScreen({ posts: externalPosts }) {
   const clearPostFocus = () => {
     setPostFocusedId(null);
     setPostReplyId(null);
+  };
+  const toggleSettingsSection = (key) => {
+    setSettingsExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
   const triggerPulse = (type, id) => {
@@ -148,6 +171,16 @@ export default function HomeScreen({ posts: externalPosts }) {
     setReplyReplyOpen((prev) => ({ ...prev, [key]: false }));
   };
 
+  const sendActivityReply = (key) => {
+    const text = (activityReplyDrafts[key] || "").trim();
+    if (!text) return;
+    setActivityRepliesByKey((prev) => ({
+      ...prev,
+      [key]: [...(prev[key] || []), text],
+    }));
+    setActivityReplyDrafts((prev) => ({ ...prev, [key]: "" }));
+  };
+
   const mergedPosts =
     externalPosts && externalPosts.length > 0
       ? [...externalPosts, ...initialPosts]
@@ -169,8 +202,798 @@ export default function HomeScreen({ posts: externalPosts }) {
 
   const steps = { current: 10500, goal: 10000 };
   const stepsComplete = steps.current >= steps.goal;
+
+  const homeWeekly = [
+    { label: "Mon", status: "green" },
+    { label: "Tue", status: "yellow" },
+    { label: "Wed", status: "green" },
+    { label: "Thu", status: "yellow" },
+    { label: "Fri", status: "red" },
+    { label: "Sat", status: "green" },
+    { label: "Sun", status: "yellow" },
+  ];
+  const homeMonthly = [
+    { label: "Jan 1–7", status: "green" },
+    { label: "Jan 8–14", status: "yellow" },
+    { label: "Jan 15–21", status: "yellow" },
+    { label: "Jan 22–28", status: "green" },
+  ];
+  const homeYearly = [
+    { label: "Jan", status: "green" },
+    { label: "Feb", status: "yellow" },
+    { label: "Mar", status: "empty" },
+    { label: "Apr", status: "empty" },
+    { label: "May", status: "empty" },
+    { label: "Jun", status: "empty" },
+    { label: "Jul", status: "empty" },
+    { label: "Aug", status: "empty" },
+    { label: "Sep", status: "empty" },
+    { label: "Oct", status: "empty" },
+    { label: "Nov", status: "empty" },
+    { label: "Dec", status: "empty" },
+  ];
+  const homeProgress =
+    homeRange === "monthly" ? homeMonthly : homeRange === "yearly" ? homeYearly : homeWeekly;
+
+  const users = [
+    {
+      id: 2,
+      name: "Marco Diaz",
+      handle: "@marco",
+      avatar: "M",
+      bio: "Meal prep & hypertrophy split.",
+      followers: 305,
+      following: 221,
+      streak: 9,
+      workouts: 64,
+      consistency: [
+        { day: "Sat", status: "yellow" },
+        { day: "Sun", status: "yellow" },
+        { day: "Mon", status: "yellow" },
+        { day: "Tue", status: "yellow" },
+        { day: "Wed", status: "yellow" },
+        { day: "Thu", status: "yellow" },
+        { day: "Fri", status: "yellow" },
+      ],
+      weeklyHours: [
+        { week: "Jan 20–26", hours: 6.2 },
+        { week: "Jan 27–Feb 2", hours: 7.8 },
+        { week: "Feb 3–9", hours: 5.4 },
+      ],
+      monthlyHours: [
+        { week: "Jan 1–7", hours: 6.2 },
+        { week: "Jan 8–14", hours: 7.8 },
+        { week: "Jan 15–21", hours: 5.4 },
+        { week: "Jan 22–28", hours: 6.9 },
+      ],
+      yearlyHours: [
+        { week: "Jan 1–31", hours: 22.3 },
+        { week: "Feb 1–28", hours: 19.4 },
+        { week: "Mar 1–31", hours: 24.1 },
+        { week: "Apr 1–30", hours: 18.6 },
+      ],
+      activity: [
+        {
+          type: "post",
+          title: "Bench PR + accessories",
+          body: "Hit 185x3 and finished with rows + core. Felt strong today.",
+          time: "2h",
+          likes: 14,
+          replies: 3,
+        },
+        {
+          type: "meal",
+          title: "Meal prep",
+          body: "Chicken bowls: 42g protein • 520 kcal per box.",
+          time: "6h",
+          likes: 22,
+          replies: 5,
+        },
+      ],
+    },
+    {
+      id: 3,
+      name: "Priya Singh",
+      handle: "@priya",
+      avatar: "P",
+      bio: "Walking daily and keeping it simple.",
+      followers: 278,
+      following: 310,
+      streak: 6,
+      workouts: 42,
+      consistency: [
+        { day: "Sat", status: "yellow" },
+        { day: "Sun", status: "yellow" },
+        { day: "Mon", status: "yellow" },
+        { day: "Tue", status: "yellow" },
+        { day: "Wed", status: "yellow" },
+        { day: "Thu", status: "yellow" },
+        { day: "Fri", status: "yellow" },
+      ],
+      weeklyHours: [
+        { week: "Jan 20–26", hours: 3.8 },
+        { week: "Jan 27–Feb 2", hours: 4.6 },
+        { week: "Feb 3–9", hours: 5.1 },
+      ],
+      monthlyHours: [
+        { week: "Jan 1–7", hours: 3.8 },
+        { week: "Jan 8–14", hours: 4.6 },
+        { week: "Jan 15–21", hours: 5.1 },
+        { week: "Jan 22–28", hours: 4.2 },
+      ],
+      yearlyHours: [
+        { week: "Jan 1–31", hours: 12.4 },
+        { week: "Feb 1–28", hours: 15.1 },
+        { week: "Mar 1–31", hours: 16.0 },
+        { week: "Apr 1–30", hours: 13.8 },
+      ],
+      activity: [
+        {
+          type: "post",
+          title: "Walk + stretch",
+          body: "20 min walk and 10 min mobility. Keeping it consistent.",
+          time: "3h",
+          likes: 9,
+          replies: 2,
+        },
+        {
+          type: "meal",
+          title: "Greek yogurt bowl",
+          body: "Yogurt + berries + honey. Simple and hits protein.",
+          time: "1d",
+          likes: 6,
+          replies: 1,
+        },
+      ],
+    },
+  ];
+  const personalProfile = {
+    name: "Aisha Patel",
+    handle: "@aisha",
+    bio: "Strength + mobility. Learning to love rest days.",
+    followers: 412,
+    following: 198,
+    streak: 12,
+    workouts: 86,
+    avatar: "A",
+    consistency: [
+      { day: "Sat", status: "yellow" },
+      { day: "Sun", status: "green" },
+      { day: "Mon", status: "yellow" },
+      { day: "Tue", status: "green" },
+      { day: "Wed", status: "yellow" },
+      { day: "Thu", status: "red" },
+      { day: "Fri", status: "green" },
+    ],
+    weeklyHours: [
+      { week: "Jan 20–26", hours: 5.2 },
+      { week: "Jan 27–Feb 2", hours: 6.8 },
+      { week: "Feb 3–9", hours: 4.9 },
+    ],
+    monthlyHours: [
+      { week: "Jan 1–7", hours: 5.2 },
+      { week: "Jan 8–14", hours: 6.8 },
+      { week: "Jan 15–21", hours: 4.9 },
+      { week: "Jan 22–28", hours: 6.1 },
+    ],
+    yearlyHours: [
+      { week: "Jan 1–31", hours: 20.4 },
+      { week: "Feb 1–28", hours: 18.9 },
+      { week: "Mar 1–31", hours: 0 },
+      { week: "Apr 1–30", hours: 0 },
+    ],
+    activity: [
+      {
+        type: "post",
+        title: "Lower body day",
+        body: "Split squats + RDLs. Felt steady.",
+        time: "1h",
+        likes: 11,
+        replies: 2,
+      },
+      {
+        type: "meal",
+        title: "High-protein lunch",
+        body: "Chicken bowl: 38g protein • 480 kcal.",
+        time: "5h",
+        likes: 18,
+        replies: 4,
+      },
+    ],
+  };
+  const filteredUsers = users.filter((u) =>
+    `${u.name} ${u.handle}`.toLowerCase().includes(userQuery.toLowerCase())
+  );
+
   return (
     <div className="screenBody">
+      <div className="homeTopBar">
+        <button
+          className="focusBtn iconBtn topIconBtn"
+          aria-label="Discover"
+          onClick={() => {
+            setDiscoverOpen((v) => !v);
+            setSelectedUser(null);
+          }}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
+            <path d="M16.5 16.5 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+          </svg>
+        </button>
+        <div className="topRight">
+          <button
+            className="profileChip"
+            aria-label="Your profile"
+            onClick={() => {
+              setProfileOpen((v) => !v);
+              setDiscoverOpen(false);
+              setSelectedUser(null);
+            }}
+          >
+            <div className="profileRing" style={{ "--ring": "72%" }}>
+              <span>72%</span>
+            </div>
+            <div className="profileText">
+              <div className="profileName">Aisha</div>
+              <div className="profileMeta">4 goals hit</div>
+            </div>
+          </button>
+          <button
+            className="focusBtn iconBtn topIconBtn"
+            aria-label="Settings"
+            onClick={() => {
+              setSettingsOpen(true);
+              setDiscoverOpen(false);
+              setProfileOpen(false);
+            }}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7zm8 3.5a7.9 7.9 0 0 0-.1-1l2-1.5-2-3.4-2.4.9a8 8 0 0 0-1.7-1l-.3-2.6H9.5l-.3 2.6a8 8 0 0 0-1.7 1l-2.4-.9-2 3.4 2 1.5a7.9 7.9 0 0 0 0 2l-2 1.5 2 3.4 2.4-.9c.5.4 1.1.7 1.7 1l.3 2.6h4.9l.3-2.6c.6-.3 1.2-.6 1.7-1l2.4.9 2-3.4-2-1.5c.1-.3.1-.7.1-1z"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      {settingsOpen && (
+        <div className="settingsScreen" role="dialog" aria-modal="true">
+          <div className="profileScreenHeader">
+            <button className="backBtn" onClick={() => setSettingsOpen(false)} aria-label="Back">
+              ←
+            </button>
+            <div className="profileScreenTitle">Settings</div>
+            <div className="profileScreenSpacer" />
+          </div>
+          <div className="settingsBody">
+            <div className={`settingsSection ${settingsExpanded.profile ? "expanded" : ""}`}>
+              <button
+                type="button"
+                className="settingsHeader"
+                aria-expanded={settingsExpanded.profile}
+                onClick={() => toggleSettingsSection("profile")}
+              >
+                <span className="settingsIcon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <circle cx="12" cy="9" r="4" fill="none" stroke="currentColor" strokeWidth="1.6" />
+                    <path d="M4 20c1.8-3 5-4.5 8-4.5s6.2 1.5 8 4.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                  </svg>
+                </span>
+                <span className="settingsTitle">Profile</span>
+                <span className="settingsArrow">›</span>
+              </button>
+              {settingsExpanded.profile && (
+                <div className="settingsContent">
+                  <input
+                    className="input"
+                    type="email"
+                    autoComplete="off"
+                    placeholder="Email"
+                  />
+                  <input
+                    className="input"
+                    type="password"
+                    autoComplete="off"
+                    placeholder="Password"
+                  />
+                  <button
+                    className="primaryBtn"
+                    type="button"
+                    onClick={() => {
+                      setSettingsOpen(false);
+                      onLogout?.();
+                    }}
+                  >
+                    Log out
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className={`settingsSection ${settingsExpanded.biometrics ? "expanded" : ""}`}>
+              <button
+                type="button"
+                className="settingsHeader"
+                aria-expanded={settingsExpanded.biometrics}
+                onClick={() => toggleSettingsSection("biometrics")}
+              >
+                <span className="settingsIcon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M6 4h12v16H6z" fill="none" stroke="currentColor" strokeWidth="1.6" />
+                    <path d="M9 7h3M9 10h3M9 13h3M9 16h3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                  </svg>
+                </span>
+                <span className="settingsTitle">Biometrics</span>
+                <span className="settingsArrow">›</span>
+              </button>
+              {settingsExpanded.biometrics && (
+                <div className="settingsContent">
+                  <div className="row">
+                    <input className="input" placeholder="Height (ft)" />
+                    <input className="input" placeholder="in" />
+                  </div>
+                  <div className="row">
+                    <input className="input" placeholder="Height (cm)" />
+                    <input className="input" placeholder="Weight (lbs)" />
+                  </div>
+                  <div className="row">
+                    <input className="input" placeholder="Weight (kg)" />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className={`settingsSection ${settingsExpanded.goals ? "expanded" : ""}`}>
+              <button
+                type="button"
+                className="settingsHeader"
+                aria-expanded={settingsExpanded.goals}
+                onClick={() => toggleSettingsSection("goals")}
+              >
+                <span className="settingsIcon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" strokeWidth="1.6" />
+                    <circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" strokeWidth="1.6" />
+                    <circle cx="12" cy="12" r="1.5" fill="currentColor" />
+                  </svg>
+                </span>
+                <span className="settingsTitle">Goals</span>
+                <span className="settingsArrow">›</span>
+              </button>
+              {settingsExpanded.goals && (
+                <div className="settingsContent">
+                  <input className="input" placeholder="Calories (kcal)" />
+                  <div className="row">
+                    <input className="input" placeholder="Protein (%)" />
+                    <input className="input" placeholder="Carbs (%)" />
+                  </div>
+                  <div className="row">
+                    <input className="input" placeholder="Fat (%)" />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className={`settingsSection ${settingsExpanded.micro ? "expanded" : ""}`}>
+              <button
+                type="button"
+                className="settingsHeader"
+                aria-expanded={settingsExpanded.micro}
+                onClick={() => toggleSettingsSection("micro")}
+              >
+                <span className="settingsIcon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M10 4h4M12 4v6l4.5 7.5a3 3 0 0 1-2.6 4.5h-3.8a3 3 0 0 1-2.6-4.5L12 10" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </span>
+                <span className="settingsTitle">Micronutrients</span>
+                <span className="settingsArrow">›</span>
+              </button>
+              {settingsExpanded.micro && (
+                <div className="settingsContent">
+                  <div className="row">
+                    <input className="input" placeholder="Fiber (g)" />
+                    <input className="input" placeholder="Sodium (mg)" />
+                  </div>
+                  <div className="row">
+                    <input className="input" placeholder="Vitamin D (IU)" />
+                    <input className="input" placeholder="Iron (mg)" />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {profileOpen && (
+        <div className="profileScreen" role="dialog" aria-modal="true">
+          <div className="profileScreenHeader">
+            <button className="backBtn" onClick={() => setProfileOpen(false)} aria-label="Back">
+              ←
+            </button>
+            <div className="profileScreenTitle">You</div>
+            <div className="profileScreenSpacer" />
+          </div>
+          <div className="profileScreenBody">
+            <div className="profileHeader">
+              <div className="profileAvatar">{personalProfile.avatar}</div>
+              <div>
+                <div className="profileTitle">{personalProfile.name}</div>
+                <div className="profileHandle">{personalProfile.handle}</div>
+              </div>
+            </div>
+            <div className="profileBio">{personalProfile.bio}</div>
+            <div className="profileStats">
+              <div className="profileStat">
+                <div className="statNum">{personalProfile.followers}</div>
+                <div className="statLabel">Followers</div>
+              </div>
+              <div className="profileStat">
+                <div className="statNum">{personalProfile.following}</div>
+                <div className="statLabel">Following</div>
+              </div>
+              <div className="profileStat">
+                <div className="statNum">{personalProfile.workouts}</div>
+                <div className="statLabel">Workouts</div>
+              </div>
+              <div className="profileStat">
+                <div className="statNum">{personalProfile.streak}</div>
+                <div className="statLabel">Streak</div>
+              </div>
+            </div>
+            <div className="profileSection">
+              <div className="profileSectionTitleRow">
+                <div className="profileSectionTitle">Workout hours</div>
+                <div className="rangeTabs">
+                  <button className={`rangeTab ${personalRange === "weekly" ? "active" : ""}`} onClick={() => setPersonalRange("weekly")}>Weekly</button>
+                  <button className={`rangeTab ${personalRange === "monthly" ? "active" : ""}`} onClick={() => setPersonalRange("monthly")}>Monthly</button>
+                  <button className={`rangeTab ${personalRange === "yearly" ? "active" : ""}`} onClick={() => setPersonalRange("yearly")}>Yearly</button>
+                </div>
+              </div>
+              <div className={`hoursChart ${personalRange}`}>
+                {(personalRange === "monthly"
+                  ? personalProfile.monthlyHours
+                  : personalRange === "yearly"
+                  ? personalProfile.yearlyHours
+                  : personalProfile.weeklyHours
+                ).map((h, i) => (
+                  <div key={`ph-${i}`} className="hoursBar">
+                    <div className="hoursValue">{h.hours.toFixed(1)}h</div>
+                    <div className="hoursFill" style={{ height: `${Math.min(h.hours / 10, 1) * 100}%` }} />
+                    <div className="hoursLabel">{h.week}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="profileSection">
+              <div className="profileSectionTitle">Activity</div>
+              <div className="activityFeed">
+                {personalProfile.activity.map((a, i) => (
+                  <button
+                    key={`pa-${i}`}
+                    className="activityCard"
+                    onClick={() =>
+                      setActivityOpen({
+                        user: personalProfile,
+                        activity: a,
+                        key: `act-me-${i}`,
+                      })
+                    }
+                  >
+                    <div className="activityHeader">
+                      <div className="activityAvatar">{personalProfile.avatar}</div>
+                      <div className="activityMeta">
+                        <div className="activityName">{personalProfile.name}</div>
+                        <div className="activityTime">{a.time}</div>
+                      </div>
+                    </div>
+                    <div className="activityTitle">{a.title}</div>
+                    <div className="activityText">{a.body}</div>
+                    {a.type === "meal" && <div className="activityImage">Meal prep photo</div>}
+                    <div className="activityStats">
+                      <span>{a.likes} likes</span>
+                      <span>{a.replies} replies</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {discoverOpen && (
+        <>
+          <div className="sectionTitle">Discover</div>
+          <div className="discoverPanel">
+            <div className="discoverSearch">
+              <input
+                className="discoverInput"
+                placeholder="Search users..."
+                value={userQuery}
+                onChange={(e) => setUserQuery(e.target.value)}
+              />
+            </div>
+            <div className="discoverList">
+              {filteredUsers.map((u) => (
+                <button
+                  key={u.id}
+                  className={`userCard ${selectedUser?.id === u.id ? "active" : ""}`}
+                  onClick={() => {
+                    setSelectedUser(u);
+                    setProfilePageUser(u);
+                  }}
+                >
+                  <div className="userAvatar">{u.name[0]}</div>
+                  <div className="userInfo">
+                    <div className="userName">{u.name}</div>
+                    <div className="userHandle">{u.handle}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
+            <div className="profilePanel">
+              {selectedUser ? (
+                <>
+                  <div className="profileHeader">
+                    <div className="profileAvatar">{selectedUser.name[0]}</div>
+                    <div>
+                      <div className="profileTitle">{selectedUser.name}</div>
+                      <div className="profileHandle">{selectedUser.handle}</div>
+                    </div>
+                  </div>
+                  <div className="profileBio">{selectedUser.bio}</div>
+                  <div className="profileStats">
+                    <div className="profileStat">
+                      <div className="statNum">{selectedUser.followers}</div>
+                      <div className="statLabel">Followers</div>
+                    </div>
+                    <div className="profileStat">
+                      <div className="statNum">{selectedUser.following}</div>
+                      <div className="statLabel">Following</div>
+                    </div>
+                    <div className="profileStat">
+                      <div className="statNum">{selectedUser.streak}</div>
+                      <div className="statLabel">Streak</div>
+                    </div>
+                    <div className="profileStat">
+                      <div className="statNum">{selectedUser.workouts}</div>
+                      <div className="statLabel">Workouts</div>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="profileEmpty">Select a user to view their profile</div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+
+      {profilePageUser && (
+        <div className="profileScreen" role="dialog" aria-modal="true">
+          <div className="profileScreenHeader">
+            <button
+              className="backBtn"
+              onClick={() => setProfilePageUser(null)}
+              aria-label="Back"
+            >
+              ←
+            </button>
+            <div className="profileScreenTitle">Profile</div>
+            <div className="profileScreenSpacer" />
+          </div>
+
+          <div className="profileScreenBody">
+            <div className="profileHeader">
+              <div className="profileAvatar">{profilePageUser.avatar || profilePageUser.name[0]}</div>
+              <div>
+                <div className="profileTitle">{profilePageUser.name}</div>
+                <div className="profileHandle">{profilePageUser.handle}</div>
+              </div>
+            </div>
+            <div className="profileBio">{profilePageUser.bio}</div>
+
+            <div className="profileStats">
+              <div className="profileStat">
+                <div className="statNum">{profilePageUser.followers}</div>
+                <div className="statLabel">Followers</div>
+              </div>
+              <div className="profileStat">
+                <div className="statNum">{profilePageUser.following}</div>
+                <div className="statLabel">Following</div>
+              </div>
+              <div className="profileStat">
+                <div className="statNum">{profilePageUser.workouts}</div>
+                <div className="statLabel">Workouts</div>
+              </div>
+              <div className="profileStat">
+                <div className="statNum">{profilePageUser.streak}</div>
+                <div className="statLabel">Streak</div>
+              </div>
+            </div>
+
+            <div className="profileSection">
+              <div className="profileSectionTitleRow">
+                <div className="profileSectionTitle">Workout hours</div>
+                <div className="rangeTabs">
+                  <button className={`rangeTab ${profileRange === "weekly" ? "active" : ""}`} onClick={() => setProfileRange("weekly")}>Weekly</button>
+                  <button className={`rangeTab ${profileRange === "monthly" ? "active" : ""}`} onClick={() => setProfileRange("monthly")}>Monthly</button>
+                  <button className={`rangeTab ${profileRange === "yearly" ? "active" : ""}`} onClick={() => setProfileRange("yearly")}>Yearly</button>
+                </div>
+              </div>
+              <div className={`hoursChart ${profileRange}`}>
+                {(profileRange === "monthly"
+                  ? profilePageUser.monthlyHours
+                  : profileRange === "yearly"
+                  ? profilePageUser.yearlyHours
+                  : profilePageUser.weeklyHours
+                ).map((h, i) => (
+                  <div key={`h-${i}`} className="hoursBar">
+                    <div className="hoursValue">{h.hours.toFixed(1)}h</div>
+                    <div className="hoursFill" style={{ height: `${Math.min(h.hours / 10, 1) * 100}%` }} />
+                    <div className="hoursLabel">{h.week}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="profileSection">
+              <div className="profileSectionTitle">Activity</div>
+              <div className="activityFeed">
+                {profilePageUser.activity.map((a, i) => (
+                  <button
+                    key={`a-${i}`}
+                    className="activityCard"
+                    onClick={() =>
+                      setActivityOpen({
+                        user: profilePageUser,
+                        activity: a,
+                        key: `act-${profilePageUser.id}-${i}`,
+                      })
+                    }
+                  >
+                    <div className="activityHeader">
+                      <div className="activityAvatar">{profilePageUser.avatar || profilePageUser.name[0]}</div>
+                      <div className="activityMeta">
+                        <div className="activityName">{profilePageUser.name}</div>
+                        <div className="activityTime">{a.time}</div>
+                      </div>
+                    </div>
+                    <div className="activityTitle">{a.title}</div>
+                    <div className="activityText">{a.body}</div>
+                    {a.type === "meal" && (
+                      <div className="activityImage">Meal prep photo</div>
+                    )}
+                    <div className="activityStats">
+                      <span>{a.likes} likes</span>
+                      <span>{a.replies} replies</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <button
+              className={`followBtn ${followRequested[profilePageUser.id] ? "requested" : ""}`}
+              onClick={() =>
+                setFollowRequested((prev) => ({
+                  ...prev,
+                  [profilePageUser.id]: !prev[profilePageUser.id],
+                }))
+              }
+            >
+              {followRequested[profilePageUser.id] ? "Requested" : "Follow"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {activityOpen && (
+        <div className="activityScreen" role="dialog" aria-modal="true">
+          <div className="profileScreenHeader">
+            <button
+              className="backBtn"
+              onClick={() => setActivityOpen(null)}
+              aria-label="Back"
+            >
+              ←
+            </button>
+            <div className="profileScreenTitle">Post</div>
+            <div className="profileScreenSpacer" />
+          </div>
+          <div className="profileScreenBody">
+            <div className="activityCard detail">
+              <div className="activityHeader">
+                <div className="activityAvatar">{activityOpen.user.avatar || activityOpen.user.name[0]}</div>
+                <div className="activityMeta">
+                  <div className="activityName">{activityOpen.user.name}</div>
+                  <div className="activityTime">{activityOpen.activity.time}</div>
+                </div>
+              </div>
+              <div className="activityTitle">{activityOpen.activity.title}</div>
+              <div className="activityText">{activityOpen.activity.body}</div>
+              {activityOpen.activity.type === "meal" && (
+                <div className="activityImage">Meal prep photo</div>
+              )}
+              <div className="postStats">
+                <span>
+                  {(activityOpen.activity.likes ?? 0) + (activityLiked[activityOpen.key] ? 1 : 0)} likes
+                </span>
+                <span>
+                  {(activityOpen.activity.replies ?? 0) +
+                    (activityRepliesByKey[activityOpen.key]?.length || 0)}{" "}
+                  replies
+                </span>
+              </div>
+            </div>
+
+            <div className="focusActions">
+              <button
+                className={`focusBtn iconBtn ${activityLiked[activityOpen.key] ? "liked" : ""}`}
+                aria-label="Like"
+                onClick={() =>
+                  setActivityLiked((prev) => ({ ...prev, [activityOpen.key]: !prev[activityOpen.key] }))
+                }
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M12 20s-7-4.35-7-9.2C5 7 6.9 5 9.3 5c1.6 0 2.7.9 2.7.9S13.1 5 14.7 5C17.1 5 19 7 19 10.8 19 15.65 12 20 12 20z"
+                    fill={activityLiked[activityOpen.key] ? "currentColor" : "none"}
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+              <button className="focusBtn iconBtn" aria-label="Reply">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M4 6h16a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H9l-5 4v-4H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinejoin="round"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            <div className="replyBox">
+              <input
+                className="replyInput"
+                placeholder="Write a reply..."
+                value={activityReplyDrafts[activityOpen.key] || ""}
+                onChange={(e) =>
+                  setActivityReplyDrafts((prev) => ({ ...prev, [activityOpen.key]: e.target.value }))
+                }
+              />
+              <button className="replySend" onClick={() => sendActivityReply(activityOpen.key)}>
+                Send
+              </button>
+            </div>
+
+            {activityRepliesByKey[activityOpen.key]?.length > 0 && (
+              <div className="replyList">
+                {activityRepliesByKey[activityOpen.key].map((text, idx) => (
+                  <div key={`${activityOpen.key}-${idx}`} className="replyItem">
+                    <span className="replyAuthor">You</span>
+                    <span className="replyText">{text}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="homeHeader">
         <div>
           <div className="homeKicker">Good morning</div>
@@ -186,7 +1009,12 @@ export default function HomeScreen({ posts: externalPosts }) {
         <div className="calendarHeader">
           <div>
             <div className="heroLabel">Weekly Progress</div>
-            <div className="calendarTitle">This Week</div>
+            <div className="calendarTitle">Progress</div>
+          </div>
+          <div className="rangeTabs">
+            <button className={`rangeTab ${homeRange === "weekly" ? "active" : ""}`} onClick={() => setHomeRange("weekly")}>Weekly</button>
+            <button className={`rangeTab ${homeRange === "monthly" ? "active" : ""}`} onClick={() => setHomeRange("monthly")}>Monthly</button>
+            <button className={`rangeTab ${homeRange === "yearly" ? "active" : ""}`} onClick={() => setHomeRange("yearly")}>Yearly</button>
           </div>
           <div className="calendarLegend">
             <span className="legendItem">
@@ -201,16 +1029,8 @@ export default function HomeScreen({ posts: externalPosts }) {
           </div>
         </div>
 
-        <div className="calendarGrid weekly" aria-label="Weekly progress calendar">
-          {[
-            { label: "Mon", status: "green" },
-            { label: "Tue", status: "yellow" },
-            { label: "Wed", status: "red" },
-            { label: "Thu", status: "green" },
-            { label: "Fri", status: "yellow" },
-            { label: "Sat", status: "green" },
-            { label: "Sun", status: "yellow" },
-          ].map((d, i) => (
+        <div className={`calendarGrid ${homeRange}`} aria-label="Progress calendar">
+          {homeProgress.map((d, i) => (
             <div key={`day-${i}`} className={`dayCell ${d.status}`} aria-label={d.label}>
               <span className="dayNum">{d.label}</span>
             </div>

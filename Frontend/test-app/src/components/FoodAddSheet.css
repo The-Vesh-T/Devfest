@@ -367,6 +367,16 @@
   font-size: 12px;
 }
 
+.cameraScanStatus {
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(125,211,252,0.35);
+  background: rgba(125,211,252,0.12);
+  color: #e9f7ff;
+  text-align: center;
+  font-size: 12px;
+}
+
 .barcodeManual {
   display: grid;
   grid-template-columns: 1fr auto;

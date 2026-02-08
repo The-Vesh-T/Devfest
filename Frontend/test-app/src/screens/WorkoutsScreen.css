@@ -451,6 +451,35 @@
   color: rgba(255,255,255,0.92);
 }
 
+.wkTimerHero{
+  margin: 0 0 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(34,197,94,0.45);
+  background: linear-gradient(135deg, rgba(34,197,94,0.24) 0%, rgba(16,185,129,0.18) 100%);
+  padding: 10px 12px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.wkTimerLabel{
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  font-weight: 900;
+  color: rgba(187,247,208,0.92);
+}
+
+.wkTimerHero b{
+  font-size: 22px;
+  line-height: 1;
+  letter-spacing: 0.8px;
+  color: rgba(240,253,244,0.98);
+  font-weight: 950;
+  font-variant-numeric: tabular-nums;
+}
+
 .wkWorkoutMeta{
   color: rgba(255,255,255,0.60);
   font-size: 12px;
@@ -735,6 +764,93 @@
   font-size: 12px;
   color: rgba(255,255,255,0.55);
   margin-top: -2px;
+}
+
+.wkDoneStats{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.wkDoneStat{
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.04);
+  border-radius: 10px;
+  padding: 8px;
+  display: grid;
+  gap: 2px;
+}
+
+.wkDoneStat span{
+  font-size: 11px;
+  color: rgba(255,255,255,0.58);
+  font-weight: 700;
+}
+
+.wkDoneStat b{
+  font-size: 14px;
+  color: rgba(255,255,255,0.94);
+  font-weight: 900;
+}
+
+.wkDoneBreakdown{
+  margin-top: 2px;
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 12px;
+  padding: 10px;
+  background: rgba(255,255,255,0.03);
+  text-align: left;
+}
+
+.wkDoneBreakdownTitle{
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  color: rgba(255,255,255,0.70);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.wkDoneBreakdownList{
+  display: grid;
+  gap: 8px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.wkDoneBreakdownRow{
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(0,0,0,0.16);
+  padding: 8px;
+  display: grid;
+  gap: 6px;
+}
+
+.wkDoneBreakdownHead{
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.wkDoneExerciseName{
+  font-size: 13px;
+  color: rgba(255,255,255,0.90);
+  font-weight: 900;
+}
+
+.wkDoneExerciseMeta{
+  font-size: 12px;
+  color: rgba(255,255,255,0.62);
+}
+
+.wkDoneBreakdownNums{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 11px;
+  color: rgba(255,255,255,0.62);
 }
 
 .wkWarningSheet{

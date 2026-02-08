@@ -113,6 +113,17 @@ const toLocalPost = ({ author, title, body }) => ({
   pinned: false,
 })
 
+const formatDuration = (totalSeconds) => {
+  const safeSeconds = Number.isFinite(Number(totalSeconds)) ? Math.max(0, Math.floor(Number(totalSeconds))) : 0
+  const hours = Math.floor(safeSeconds / 3600)
+  const minutes = Math.floor((safeSeconds % 3600) / 60)
+  const seconds = safeSeconds % 60
+  if (hours > 0) {
+    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
+  }
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
+}
+
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [sessionUser, setSessionUser] = useState(ACCOUNTS[0])
@@ -197,6 +208,11 @@ export default function App() {
     const exerciseCount = Number.isFinite(Number(summary.exerciseCount)) ? Number(summary.exerciseCount) : 0
     const setCount = Number.isFinite(Number(summary.setCount)) ? Number(summary.setCount) : 0
     lines.push(`Completed ${exerciseCount} exercises and ${setCount} sets.`)
+    if (summary.durationLabel) {
+      lines.push(`Duration: ${summary.durationLabel}`)
+    } else if (Number.isFinite(Number(summary.durationSeconds))) {
+      lines.push(`Duration: ${formatDuration(summary.durationSeconds)}`)
+    }
     if (Number.isFinite(Number(summary.totalWeight))) {
       lines.push(`Total weight: ${Number(summary.totalWeight)} kg`)
     }

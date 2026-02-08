@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./WorkoutsScreen.css";
 import { isSupabaseConfigured } from "../lib/supabase";
 import {
@@ -140,6 +140,17 @@ function sanitizeNumberInput(raw, { allowDecimal = false, maxIntegerDigits = 3, 
   const filteredInt = integerPart.replace(/\D/g, "").slice(0, maxIntegerDigits) || "0";
   const decimalPart = rest.join("").replace(/\D/g, "").slice(0, maxDecimalDigits);
   return decimalPart ? `${filteredInt}.${decimalPart}` : filteredInt;
+}
+
+function formatDuration(totalSeconds) {
+  const safeSeconds = Number.isFinite(Number(totalSeconds)) ? Math.max(0, Math.floor(Number(totalSeconds))) : 0;
+  const hours = Math.floor(safeSeconds / 3600);
+  const minutes = Math.floor((safeSeconds % 3600) / 60);
+  const seconds = safeSeconds % 60;
+  if (hours > 0) {
+    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  }
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
 function Section({ title, right }) {
@@ -450,6 +461,7 @@ function DiscoverWorkoutsSheet({ open, onClose, onToggle, routines }) {
 
 // Active Workout Screen (like Hevy's live workout)
 function ActiveWorkoutScreen({ routine, lastSets, onClose, onComplete }) {
+  const workoutStartMsRef = useRef(0);
   const [exercises, setExercises] = useState(() =>
     (routine.exercises || []).map((ex) => {
       if (typeof ex === "string") return makeExercise(ex);
@@ -461,6 +473,15 @@ function ActiveWorkoutScreen({ routine, lastSets, onClose, onComplete }) {
   );
   const [newExercise, setNewExercise] = useState("");
   const [weightWarning, setWeightWarning] = useState(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  useEffect(() => {
+    workoutStartMsRef.current = Date.now();
+    const intervalId = window.setInterval(() => {
+      setElapsedSeconds(Math.floor((Date.now() - workoutStartMsRef.current) / 1000));
+    }, 1000);
+    return () => window.clearInterval(intervalId);
+  }, []);
 
   const handleNumericKeyDown = (e, { allowDecimal }) => {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
@@ -561,6 +582,7 @@ function ActiveWorkoutScreen({ routine, lastSets, onClose, onComplete }) {
     }, 0);
   }, 0);
   const canComplete = totalSets > 0;
+  const elapsedLabel = formatDuration(elapsedSeconds);
 
   return (
     <>
@@ -571,6 +593,10 @@ function ActiveWorkoutScreen({ routine, lastSets, onClose, onComplete }) {
             <div className="wkWorkoutTitle">{routine.title}</div>
             <button className="wkCloseBtn" onClick={onClose} aria-label="Close workout">×</button>
           </div>
+        <div className="wkTimerHero" aria-live="polite">
+          <span className="wkTimerLabel">Workout Timer</span>
+          <b>{elapsedLabel}</b>
+        </div>
         <div className="wkHeroStats">
           <div className="wkHeroStat"><span>Exercises</span><b>{exercises.length}</b></div>
           <div className="wkHeroStat"><span>Sets</span><b>{totalSets}</b></div>
@@ -580,7 +606,7 @@ function ActiveWorkoutScreen({ routine, lastSets, onClose, onComplete }) {
 
         <div className="wkWorkoutBody">
           <div className="wkWorkoutMeta">
-            Tap into weight/reps to log each set · Total weight: {Math.round(totalWeight)} kg
+            Duration: {elapsedLabel} · Tap into weight/reps to log each set · Total weight: {Math.round(totalWeight)} kg
           </div>
           <div className="wkExercisesList">
             {exercises.map((ex) => (
@@ -679,12 +705,16 @@ function ActiveWorkoutScreen({ routine, lastSets, onClose, onComplete }) {
         <button
           className="wkCompleteBtn"
           disabled={!canComplete}
-          onClick={() =>
+          onClick={() => {
+            const durationSeconds = Math.max(0, Math.floor((Date.now() - workoutStartMsRef.current) / 1000));
+            const durationLabel = formatDuration(durationSeconds);
             onComplete({
               title: routine.title,
               exerciseCount: exercises.length,
               setCount: totalSets,
               totalWeight: Math.round(totalWeight),
+              durationSeconds,
+              durationLabel,
               exercises: exercises.map((ex) => ex.name),
               exerciseSets: exercises.map((ex) => ({
                 name: ex.name,
@@ -695,8 +725,8 @@ function ActiveWorkoutScreen({ routine, lastSets, onClose, onComplete }) {
                   dropset: set.dropset,
                 })),
               })),
-            })
-          }
+            });
+          }}
         >
           ✓ Complete Workout
         </button>
@@ -759,13 +789,75 @@ function WorkoutActionsSheet({ open, onClose, onStartEmpty, onCreateRoutine, onD
 
 function WorkoutCompleteSheet({ open, summary, onDone, onPost }) {
   if (!open || !summary) return null;
+  const durationLabel = summary.durationLabel || formatDuration(summary.durationSeconds);
+  const exerciseBreakdown = (summary.exerciseSets || []).map((exercise) => {
+    const sets = Array.isArray(exercise?.sets) ? exercise.sets : [];
+    let totalReps = 0;
+    let volume = 0;
+    let bestWeight = 0;
+    let failureSets = 0;
+    let dropsets = 0;
+
+    sets.forEach((set) => {
+      const weight = Number(set?.weight);
+      const reps = Number(set?.reps);
+      const safeWeight = Number.isFinite(weight) ? Math.max(0, weight) : 0;
+      const safeReps = Number.isFinite(reps) ? Math.max(0, reps) : 0;
+      totalReps += safeReps;
+      volume += safeWeight * safeReps;
+      bestWeight = Math.max(bestWeight, safeWeight);
+      if (set?.failure) failureSets += 1;
+      if (set?.dropset) dropsets += 1;
+    });
+
+    return {
+      name: exercise?.name || "Exercise",
+      setCount: sets.length,
+      totalReps,
+      volume,
+      bestWeight,
+      failureSets,
+      dropsets,
+    };
+  });
+
+  const totalVolume = exerciseBreakdown.reduce((sum, ex) => sum + ex.volume, 0);
+  const totalReps = exerciseBreakdown.reduce((sum, ex) => sum + ex.totalReps, 0);
+  const failureCount = exerciseBreakdown.reduce((sum, ex) => sum + ex.failureSets, 0);
+  const dropsetCount = exerciseBreakdown.reduce((sum, ex) => sum + ex.dropsets, 0);
 
   return (
     <div className="wkSheetBackdrop" role="presentation">
       <div className="wkSheet wkDoneSheet" role="dialog" aria-modal="true">
         <div className="wkDoneIcon">✓</div>
         <div className="wkDoneTitle">Workout Completed</div>
-        <div className="wkDoneMeta">{summary.exerciseCount} exercises • {summary.setCount} sets logged</div>
+        <div className="wkDoneMeta">{summary.exerciseCount} exercises • {summary.setCount} sets logged • {durationLabel}</div>
+        <div className="wkDoneStats">
+          <div className="wkDoneStat"><span>Volume</span><b>{Math.round(totalVolume)} kg</b></div>
+          <div className="wkDoneStat"><span>Total reps</span><b>{Math.round(totalReps)}</b></div>
+          <div className="wkDoneStat"><span>Failure sets</span><b>{failureCount}</b></div>
+          <div className="wkDoneStat"><span>Dropsets</span><b>{dropsetCount}</b></div>
+        </div>
+        {exerciseBreakdown.length > 0 ? (
+          <div className="wkDoneBreakdown">
+            <div className="wkDoneBreakdownTitle">Breakdown</div>
+            <div className="wkDoneBreakdownList">
+              {exerciseBreakdown.map((exercise) => (
+                <div key={exercise.name} className="wkDoneBreakdownRow">
+                  <div className="wkDoneBreakdownHead">
+                    <span className="wkDoneExerciseName">{exercise.name}</span>
+                    <span className="wkDoneExerciseMeta">{exercise.setCount} sets</span>
+                  </div>
+                  <div className="wkDoneBreakdownNums">
+                    <span>{Math.round(exercise.volume)} kg volume</span>
+                    <span>{Math.round(exercise.totalReps)} reps</span>
+                    <span>Best {exercise.bestWeight} kg</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
         <div className="wkDoneHint">Want to post this workout to your feed?</div>
         <button
           className="wkDoneBtn"

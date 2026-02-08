@@ -33,19 +33,6 @@ create table if not exists meal_entries (
 
 create index if not exists meal_entries_user_date_idx on meal_entries (user_id, consumed_on desc, created_at desc);
 
-create table if not exists food_catalog (
-  barcode text primary key,
-  name text not null,
-  calories int not null default 0,
-  protein int not null default 0,
-  carbs int not null default 0,
-  fat int not null default 0,
-  detail text not null default '',
-  source text not null default 'openfoodfacts',
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
 create table if not exists workout_routines (
   id uuid primary key default gen_random_uuid(),
   user_id text not null,
@@ -68,6 +55,21 @@ create table if not exists workout_sessions (
 );
 
 create index if not exists workout_sessions_user_idx on workout_sessions (user_id, created_at desc);
+
+create table if not exists workout_set_entries (
+  id uuid primary key default gen_random_uuid(),
+  user_id text not null,
+  session_id uuid not null references workout_sessions(id) on delete cascade,
+  exercise_name text not null,
+  set_index int not null default 1,
+  weight numeric,
+  reps int,
+  failure boolean not null default false,
+  dropset boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists workout_set_entries_user_idx on workout_set_entries (user_id, exercise_name, created_at desc);
 
 create table if not exists posts (
   id uuid primary key default gen_random_uuid(),

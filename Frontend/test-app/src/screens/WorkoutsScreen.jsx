@@ -760,6 +760,7 @@ export default function WorkoutsScreen({ userId }) {
       }
       if (Array.isArray(data) && data.length > 0) {
         setRoutines(data);
+        saveRoutines(data);
         return;
       }
       setRoutines(MOCK_ROUTINES);
@@ -779,7 +780,7 @@ export default function WorkoutsScreen({ userId }) {
   function updateRoutines(updater) {
     setRoutines((prev) => {
       const next = typeof updater === "function" ? updater(prev) : updater;
-      if (!useRemote) saveRoutines(next);
+      saveRoutines(next);
       return next;
     });
   }

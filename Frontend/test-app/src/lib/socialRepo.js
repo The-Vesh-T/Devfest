@@ -34,7 +34,7 @@ export const listFeedPosts = async ({ userId, limit = 50 }) => {
     supabase.from("post_likes").select("post_id,user_id").in("post_id", postIds),
     supabase
       .from("post_comments")
-      .select("id,post_id,user_id,author,body,created_at")
+      .select("id,post_id,user_id,author,body,parent_comment_id,created_at")
       .in("post_id", postIds)
       .order("created_at", { ascending: true }),
   ])
@@ -49,18 +49,53 @@ export const listFeedPosts = async ({ userId, limit = 50 }) => {
     if (userId && row.user_id === userId) likedByMe[row.post_id] = true
   })
 
+  const commentRows = comments || []
+  const commentIds = commentRows.map((row) => row.id)
+  let commentLikes = []
+  if (commentIds.length > 0) {
+    const { data: commentLikeRows, error: commentLikesError } = await supabase
+      .from("post_comment_likes")
+      .select("comment_id,user_id")
+      .in("comment_id", commentIds)
+    if (commentLikesError) return { data: [], error: commentLikesError }
+    commentLikes = commentLikeRows || []
+  }
+
+  const commentLikeCountById = {}
+  const commentLikedByMe = {}
+  commentLikes.forEach((row) => {
+    commentLikeCountById[row.comment_id] = (commentLikeCountById[row.comment_id] || 0) + 1
+    if (userId && row.user_id === userId) commentLikedByMe[row.comment_id] = true
+  })
+
   const commentCountByPost = {}
-  const commentsByPost = {}
-  ;(comments || []).forEach((row) => {
+  const commentById = {}
+  commentRows.forEach((row) => {
     commentCountByPost[row.post_id] = (commentCountByPost[row.post_id] || 0) + 1
-    if (!commentsByPost[row.post_id]) commentsByPost[row.post_id] = []
-    commentsByPost[row.post_id].push({
+    commentById[row.id] = {
       id: row.id,
       userId: row.user_id,
       author: cleanText(row.author, "User"),
       body: cleanText(row.body),
       createdAt: row.created_at,
-    })
+      parentCommentId: row.parent_comment_id || null,
+      likes: commentLikeCountById[row.id] || 0,
+      likedByMe: Boolean(commentLikedByMe[row.id]),
+      replies: [],
+    }
+  })
+
+  const commentsByPost = {}
+  commentRows.forEach((row) => {
+    const comment = commentById[row.id]
+    const parentId = row.parent_comment_id || null
+    const parent = parentId ? commentById[parentId] : null
+    if (parent) {
+      parent.replies.push(comment)
+      return
+    }
+    if (!commentsByPost[row.post_id]) commentsByPost[row.post_id] = []
+    commentsByPost[row.post_id].push(comment)
   })
 
   const mapped = posts.map((row) => ({
@@ -132,7 +167,7 @@ export const setPostLike = async ({ userId, postId, liked }) => {
   return { error }
 }
 
-export const addPostComment = async ({ userId, postId, author, body }) => {
+export const addPostComment = async ({ userId, postId, author, body, parentCommentId = null }) => {
   if (!isSupabaseConfigured || !userId || !postId) return { error: null }
   const text = cleanText(body)
   if (!text) return { error: null }
@@ -141,10 +176,30 @@ export const addPostComment = async ({ userId, postId, author, body }) => {
     post_id: postId,
     user_id: userId,
     author: cleanText(author, "User"),
+    parent_comment_id: parentCommentId || null,
     body: text,
   }
 
   const { error } = await supabase.from("post_comments").insert(payload)
+  return { error }
+}
+
+export const setCommentLike = async ({ userId, commentId, liked }) => {
+  if (!isSupabaseConfigured || !userId || !commentId) return { error: null }
+
+  if (liked) {
+    const { error } = await supabase.from("post_comment_likes").upsert(
+      { comment_id: commentId, user_id: userId },
+      { onConflict: "comment_id,user_id", ignoreDuplicates: true }
+    )
+    return { error }
+  }
+
+  const { error } = await supabase
+    .from("post_comment_likes")
+    .delete()
+    .eq("comment_id", commentId)
+    .eq("user_id", userId)
   return { error }
 }
 

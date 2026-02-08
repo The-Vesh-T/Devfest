@@ -25,6 +25,7 @@ import {
   createFeedPost,
   ensureSeedSocialData,
   listFeedPosts,
+  setCommentLike,
   setPostLike,
 } from "./lib/socialRepo"
 import { isSupabaseConfigured } from "./lib/supabase"
@@ -373,7 +374,7 @@ export default function App() {
     syncPosts()
   }
 
-  const handleAddPostReply = async (postId, text) => {
+  const handleAddPostReply = async (postId, text, parentCommentId = null) => {
     if (!postId || !text) return
 
     if (!isSupabaseConfigured) {
@@ -390,9 +391,20 @@ export default function App() {
       postId,
       author: sessionUser?.displayName || sessionUser?.name || "You",
       body: text,
+      parentCommentId,
     })
     if (error) {
       console.error("Failed to add post comment in Supabase", error)
+      return
+    }
+    syncPosts()
+  }
+
+  const handleToggleCommentLike = async (commentId, liked) => {
+    if (!commentId || !isSupabaseConfigured) return
+    const { error } = await setCommentLike({ userId: currentUserId, commentId, liked })
+    if (error) {
+      console.error("Failed to toggle comment like in Supabase", error)
       return
     }
     syncPosts()
@@ -446,6 +458,7 @@ export default function App() {
                     selectedDate={selectedDate}
                     onTogglePostLike={handleTogglePostLike}
                     onAddPostReply={handleAddPostReply}
+                    onToggleCommentLike={handleToggleCommentLike}
                     usePlaceholderPosts={!isSupabaseConfigured}
                   />
                 )}

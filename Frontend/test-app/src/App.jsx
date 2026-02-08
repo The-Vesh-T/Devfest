@@ -120,7 +120,7 @@ export default function App() {
   const [posts, setPosts] = useState([])
   const [customFoods, setCustomFoods] = useState([])
   const [mealEntries, setMealEntries] = useState([])
-  const [selectedDate, setSelectedDate] = useState(() => new Date())
+  const [selectedDate, setSelectedDate] = useState(() => new Date(2026, 1, 8))
 
   const isWorkoutTab = tab === "workouts"
   const isHomeTab = tab === "home"
@@ -377,6 +377,7 @@ export default function App() {
                     posts={posts}
                     onLogout={handleLogout}
                     currentUser={sessionUser}
+                    selectedDate={selectedDate}
                     onTogglePostLike={handleTogglePostLike}
                     onAddPostReply={handleAddPostReply}
                   />

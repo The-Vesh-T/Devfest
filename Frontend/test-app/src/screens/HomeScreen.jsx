@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import "../HomeScreen.css";
+import profileAvatar from "../assets/profile-avatar.svg";
+import femaleProfileAvatar from "../assets/profile-avatar-female.svg";
 
 const feed = [
   { id: 1, name: "Aisha", action: "Workout", text: "Squats day. Kept it clean.", likes: 12, replies: 2, time: "1h", pinned: true },
@@ -56,6 +58,7 @@ export default function HomeScreen({
   posts: externalPosts,
   onLogout,
   currentUser,
+  selectedDate,
   onTogglePostLike,
   onAddPostReply,
 }) {
@@ -69,6 +72,13 @@ export default function HomeScreen({
   };
   const accountEmail = activeUser.email;
   const accountPassword = activeUser.password;
+  const userAvatarSrc = activeUser.login === "user" ? profileAvatar : femaleProfileAvatar;
+  const selfLabel = activeUser.displayName || activeUser.name || "You";
+  const headerDate = (selectedDate ?? new Date()).toLocaleDateString("en-US", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
   const [homeRange, setHomeRange] = useState("weekly");
   const [profileRange, setProfileRange] = useState("weekly");
   const [personalRange, setPersonalRange] = useState("weekly");
@@ -207,7 +217,7 @@ export default function HomeScreen({
 
   const mergedPosts =
     externalPosts && externalPosts.length > 0
-      ? externalPosts
+      ? [...externalPosts, ...initialPosts]
       : initialPosts;
   const sortedPosts = [...mergedPosts].sort((a, b) => {
     const aPinned = pinnedById[a.id] ?? a.pinned ?? false;
@@ -258,6 +268,12 @@ export default function HomeScreen({
   ];
   const homeProgress =
     homeRange === "monthly" ? homeMonthly : homeRange === "yearly" ? homeYearly : homeWeekly;
+  const goalTrackerTotal = homeProgress.filter((d) => d.status !== "empty").length;
+  const goalTrackerDone = homeProgress.filter((d) => d.status === "green").length;
+  const goalTrackerLabel =
+    homeRange === "monthly" ? "monthly goals" : homeRange === "yearly" ? "yearly goals" : "weekly goals";
+  const progressRangeLabel =
+    homeRange === "monthly" ? "Monthly" : homeRange === "yearly" ? "Yearly" : "Weekly";
 
   const users = [
     {
@@ -380,6 +396,7 @@ export default function HomeScreen({
     streak: 12,
     workouts: 86,
     avatar: (activeUser.displayName || activeUser.name || "A").charAt(0).toUpperCase(),
+    avatarSrc: userAvatarSrc,
     consistency: [
       { day: "Sat", status: "yellow" },
       { day: "Sun", status: "green" },
@@ -428,40 +445,48 @@ export default function HomeScreen({
   const filteredUsers = users.filter((u) =>
     `${u.name} ${u.handle}`.toLowerCase().includes(userQuery.toLowerCase())
   );
+  const renderAvatar = (user, className) => {
+    if (user?.avatarSrc) {
+      return (
+        <div className={className}>
+          <img src={user.avatarSrc} alt="" className="avatarImage" />
+        </div>
+      );
+    }
+    return <div className={className}>{user?.avatar || user?.name?.[0] || "U"}</div>;
+  };
 
   return (
     <div className="screenBody">
-      <div className="homeTopBar">
+      <div className="welcomeRow">
         <button
-          className="focusBtn iconBtn topIconBtn"
-          aria-label="Discover"
+          className="welcomeAvatarBtn"
+          aria-label="Your profile"
           onClick={() => {
-            setDiscoverOpen((v) => !v);
+            setProfileOpen((v) => !v);
+            setDiscoverOpen(false);
             setSelectedUser(null);
           }}
         >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
-            <path d="M16.5 16.5 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-          </svg>
+          <img src={userAvatarSrc} alt="" className="welcomeAvatar" />
         </button>
-        <div className="topRight">
+        <div className="welcomeText">
+          <div className="welcomeDate">{headerDate}</div>
+          <div className="welcomeTitle">Hi, {activeUser.displayName}</div>
+        </div>
+        <div className="welcomeActions">
           <button
-            className="profileChip"
-            aria-label="Your profile"
+            className="focusBtn iconBtn topIconBtn"
+            aria-label="Discover"
             onClick={() => {
-              setProfileOpen((v) => !v);
-              setDiscoverOpen(false);
+              setDiscoverOpen((v) => !v);
               setSelectedUser(null);
             }}
           >
-            <div className="profileRing" style={{ "--ring": "72%" }}>
-              <span>72%</span>
-            </div>
-            <div className="profileText">
-              <div className="profileName">{activeUser.displayName}</div>
-              <div className="profileMeta">4 goals hit</div>
-            </div>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
+              <path d="M16.5 16.5 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+            </svg>
           </button>
           <button
             className="focusBtn iconBtn topIconBtn"
@@ -643,12 +668,12 @@ export default function HomeScreen({
             <button className="backBtn" onClick={() => setProfileOpen(false)} aria-label="Back">
               ←
             </button>
-            <div className="profileScreenTitle">You</div>
+            <div className="profileScreenTitle">{selfLabel}</div>
             <div className="profileScreenSpacer" />
           </div>
           <div className="profileScreenBody">
             <div className="profileHeader">
-              <div className="profileAvatar">{personalProfile.avatar}</div>
+              {renderAvatar(personalProfile, "profileAvatar")}
               <div>
                 <div className="profileTitle">{personalProfile.name}</div>
                 <div className="profileHandle">{personalProfile.handle}</div>
@@ -725,7 +750,7 @@ export default function HomeScreen({
                     }
                   >
                     <div className="activityHeader">
-                      <div className="activityAvatar">{personalProfile.avatar}</div>
+                      {renderAvatar(personalProfile, "activityAvatar")}
                       <div className="activityMeta">
                         <div className="activityName">{personalProfile.name}</div>
                         <div className="activityTime">{a.time}</div>
@@ -780,7 +805,7 @@ export default function HomeScreen({
               {selectedUser ? (
                 <>
                   <div className="profileHeader">
-                    <div className="profileAvatar">{selectedUser.name[0]}</div>
+                    {renderAvatar(selectedUser, "profileAvatar")}
                     <div>
                       <div className="profileTitle">{selectedUser.name}</div>
                       <div className="profileHandle">{selectedUser.handle}</div>
@@ -830,7 +855,7 @@ export default function HomeScreen({
 
           <div className="profileScreenBody">
             <div className="profileHeader">
-              <div className="profileAvatar">{profilePageUser.avatar || profilePageUser.name[0]}</div>
+              {renderAvatar(profilePageUser, "profileAvatar")}
               <div>
                 <div className="profileTitle">{profilePageUser.name}</div>
                 <div className="profileHandle">{profilePageUser.handle}</div>
@@ -898,7 +923,7 @@ export default function HomeScreen({
                     }
                   >
                     <div className="activityHeader">
-                      <div className="activityAvatar">{profilePageUser.avatar || profilePageUser.name[0]}</div>
+                      {renderAvatar(profilePageUser, "activityAvatar")}
                       <div className="activityMeta">
                         <div className="activityName">{profilePageUser.name}</div>
                         <div className="activityTime">{a.time}</div>
@@ -949,7 +974,7 @@ export default function HomeScreen({
           <div className="profileScreenBody">
             <div className="activityCard detail">
               <div className="activityHeader">
-                <div className="activityAvatar">{activityOpen.user.avatar || activityOpen.user.name[0]}</div>
+                {renderAvatar(activityOpen.user, "activityAvatar")}
                 <div className="activityMeta">
                   <div className="activityName">{activityOpen.user.name}</div>
                   <div className="activityTime">{activityOpen.activity.time}</div>
@@ -1010,7 +1035,7 @@ export default function HomeScreen({
               <div className="replyList">
                 {activityRepliesByKey[activityOpen.key].map((text, idx) => (
                   <div key={`${activityOpen.key}-${idx}`} className="replyItem">
-                    <span className="replyAuthor">You</span>
+                    <span className="replyAuthor">{selfLabel}</span>
                     <span className="replyText">{text}</span>
                   </div>
                 ))}
@@ -1021,20 +1046,22 @@ export default function HomeScreen({
       )}
 
       <div className="homeHeader">
-        <div>
-          <div className="homeKicker">Good morning</div>
-          <h2 className="screenTitle homeTitle">{activeUser.displayName}</h2>
-        </div>
         <div className="streakBadge">
           <div className="streakNum">12</div>
-          <div className="streakLabel">day streak</div>
+          <div className="streakLabel">current streak</div>
+        </div>
+        <div className="streakBadge tracker">
+          <div className="streakNum">
+            {goalTrackerDone}/{goalTrackerTotal}
+          </div>
+          <div className="streakLabel">{goalTrackerLabel}</div>
         </div>
       </div>
 
       <div className="heroCard calendarCard">
         <div className="calendarHeader">
           <div>
-            <div className="heroLabel">Weekly Progress</div>
+            <div className="heroLabel">{progressRangeLabel} Progress</div>
             <div className="calendarTitle">Progress</div>
           </div>
           <div className="rangeTabs">
@@ -1126,7 +1153,7 @@ export default function HomeScreen({
             onClick={() => focusPost(post.id)}
           >
             <div className="postHeader">
-              <div className="postAuthor">{post.author}</div>
+              <div className="postAuthor">{post.author === "You" ? selfLabel : post.author}</div>
               <div className="postMeta">
                 <span className="postTime">{post.time}</span>
                 <button
@@ -1213,7 +1240,7 @@ export default function HomeScreen({
                   : postRepliesById[post.id].slice(0, 1)
                 ).map((text, idx) => (
                   <div key={`${post.id}-reply-${idx}`} className="replyItem">
-                    <span className="replyAuthor">You</span>
+                    <span className="replyAuthor">{selfLabel}</span>
                     <span className="replyText">{text}</span>
                     {(() => {
                       const replyKey = `post-${post.id}-${idx}`;
@@ -1271,7 +1298,7 @@ export default function HomeScreen({
                                 : replyRepliesByKey[replyKey].slice(0, 1)
                               ).map((r, rIdx) => (
                                 <div key={`${replyKey}-sub-${rIdx}`} className="replyItem nested">
-                                  <span className="replyAuthor">You</span>
+                                  <span className="replyAuthor">{selfLabel}</span>
                                   <span className="replyText">{r}</span>
                                   <div className="replyActionsRow">
                                     <button
@@ -1444,7 +1471,7 @@ export default function HomeScreen({
                   : repliesById[p.id].slice(0, 1)
                 ).map((text, idx) => (
                   <div key={`${p.id}-reply-${idx}`} className="replyItem">
-                    <span className="replyAuthor">You</span>
+                    <span className="replyAuthor">{selfLabel}</span>
                     <span className="replyText">{text}</span>
                     {(() => {
                       const replyKey = `feed-${p.id}-${idx}`;
@@ -1502,7 +1529,7 @@ export default function HomeScreen({
                                 : replyRepliesByKey[replyKey].slice(0, 1)
                               ).map((r, rIdx) => (
                                 <div key={`${replyKey}-sub-${rIdx}`} className="replyItem nested">
-                                  <span className="replyAuthor">You</span>
+                                  <span className="replyAuthor">{selfLabel}</span>
                                   <span className="replyText">{r}</span>
                                   <div className="replyActionsRow">
                                     <button

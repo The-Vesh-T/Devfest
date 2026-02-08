@@ -62,6 +62,10 @@ export default function HomeScreen({
   onTogglePostLike,
   onAddPostReply,
   onToggleCommentLike,
+  nutritionGoals,
+  onSaveNutritionGoals,
+  biometrics,
+  onSaveBiometrics,
   usePlaceholderPosts = true,
 }) {
   const activeUser = currentUser ?? {
@@ -124,10 +128,44 @@ export default function HomeScreen({
   });
   const [userQuery, setUserQuery] = useState("");
   const [personalBio, setPersonalBio] = useState(activeUser.bio);
+  const [goalDraft, setGoalDraft] = useState({
+    calories: `${nutritionGoals?.calories ?? 1800}`,
+    proteinPct: `${nutritionGoals?.proteinPct ?? 30}`,
+    carbsPct: `${nutritionGoals?.carbsPct ?? 40}`,
+    fatPct: `${nutritionGoals?.fatPct ?? 30}`,
+  });
+  const [biometricsDraft, setBiometricsDraft] = useState({
+    heightFt: `${biometrics?.heightFt ?? ""}`,
+    heightIn: `${biometrics?.heightIn ?? ""}`,
+    heightCm: `${biometrics?.heightCm ?? ""}`,
+    weightLbs: `${biometrics?.weightLbs ?? ""}`,
+    weightKg: `${biometrics?.weightKg ?? ""}`,
+  });
+  const [goalsSaved, setGoalsSaved] = useState(false);
+  const [biometricsSaved, setBiometricsSaved] = useState(false);
 
   useEffect(() => {
     setPersonalBio(activeUser.bio);
   }, [activeUser.bio]);
+
+  useEffect(() => {
+    setGoalDraft({
+      calories: `${nutritionGoals?.calories ?? 1800}`,
+      proteinPct: `${nutritionGoals?.proteinPct ?? 30}`,
+      carbsPct: `${nutritionGoals?.carbsPct ?? 40}`,
+      fatPct: `${nutritionGoals?.fatPct ?? 30}`,
+    });
+  }, [nutritionGoals]);
+
+  useEffect(() => {
+    setBiometricsDraft({
+      heightFt: `${biometrics?.heightFt ?? ""}`,
+      heightIn: `${biometrics?.heightIn ?? ""}`,
+      heightCm: `${biometrics?.heightCm ?? ""}`,
+      weightLbs: `${biometrics?.weightLbs ?? ""}`,
+      weightKg: `${biometrics?.weightKg ?? ""}`,
+    });
+  }, [biometrics]);
 
   useEffect(() => {
     if (!usePlaceholderPosts) {
@@ -149,6 +187,38 @@ export default function HomeScreen({
   const toggleSettingsSection = (key) => {
     setSettingsExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
   };
+
+  const saveGoals = () => {
+    onSaveNutritionGoals?.({
+      calories: Number(goalDraft.calories) || 0,
+      proteinPct: Number(goalDraft.proteinPct) || 0,
+      carbsPct: Number(goalDraft.carbsPct) || 0,
+      fatPct: Number(goalDraft.fatPct) || 0,
+    });
+    setGoalsSaved(true);
+    setTimeout(() => setGoalsSaved(false), 1400);
+  };
+
+  const saveBiometrics = () => {
+    onSaveBiometrics?.({
+      heightFt: biometricsDraft.heightFt,
+      heightIn: biometricsDraft.heightIn,
+      heightCm: biometricsDraft.heightCm,
+      weightLbs: biometricsDraft.weightLbs,
+      weightKg: biometricsDraft.weightKg,
+    });
+    setBiometricsSaved(true);
+    setTimeout(() => setBiometricsSaved(false), 1400);
+  };
+  const biometricsSummary = [
+    biometricsDraft.heightFt ? `${biometricsDraft.heightFt} ft` : null,
+    biometricsDraft.heightIn ? `${biometricsDraft.heightIn} in` : null,
+    biometricsDraft.heightCm ? `${biometricsDraft.heightCm} cm` : null,
+    biometricsDraft.weightLbs ? `${biometricsDraft.weightLbs} lb` : null,
+    biometricsDraft.weightKg ? `${biometricsDraft.weightKg} kg` : null,
+  ]
+    .filter(Boolean)
+    .join(" • ");
 
   const triggerPulse = (type, id) => {
     setPulse((p) => ({ ...p, [type]: id }));
@@ -677,15 +747,78 @@ export default function HomeScreen({
               {settingsExpanded.biometrics && (
                 <div className="settingsContent">
                   <div className="row">
-                    <input className="input" placeholder="Height (ft)" />
-                    <input className="input" placeholder="in" />
+                    <input
+                      className="input"
+                      placeholder="Height (ft)"
+                      inputMode="numeric"
+                      value={biometricsDraft.heightFt}
+                      onChange={(e) =>
+                        setBiometricsDraft((prev) => ({
+                          ...prev,
+                          heightFt: e.target.value.replace(/\D/g, ""),
+                        }))
+                      }
+                    />
+                    <input
+                      className="input"
+                      placeholder="in"
+                      inputMode="numeric"
+                      value={biometricsDraft.heightIn}
+                      onChange={(e) =>
+                        setBiometricsDraft((prev) => ({
+                          ...prev,
+                          heightIn: e.target.value.replace(/\D/g, ""),
+                        }))
+                      }
+                    />
                   </div>
                   <div className="row">
-                    <input className="input" placeholder="Height (cm)" />
-                    <input className="input" placeholder="Weight (lbs)" />
+                    <input
+                      className="input"
+                      placeholder="Height (cm)"
+                      inputMode="numeric"
+                      value={biometricsDraft.heightCm}
+                      onChange={(e) =>
+                        setBiometricsDraft((prev) => ({
+                          ...prev,
+                          heightCm: e.target.value.replace(/\D/g, ""),
+                        }))
+                      }
+                    />
+                    <input
+                      className="input"
+                      placeholder="Weight (lbs)"
+                      inputMode="numeric"
+                      value={biometricsDraft.weightLbs}
+                      onChange={(e) =>
+                        setBiometricsDraft((prev) => ({
+                          ...prev,
+                          weightLbs: e.target.value.replace(/\D/g, ""),
+                        }))
+                      }
+                    />
                   </div>
                   <div className="row">
-                    <input className="input" placeholder="Weight (kg)" />
+                    <input
+                      className="input"
+                      placeholder="Weight (kg)"
+                      inputMode="numeric"
+                      value={biometricsDraft.weightKg}
+                      onChange={(e) =>
+                        setBiometricsDraft((prev) => ({
+                          ...prev,
+                          weightKg: e.target.value.replace(/\D/g, ""),
+                        }))
+                      }
+                    />
+                    <button className="primaryBtn" type="button" onClick={saveBiometrics}>
+                      Save
+                    </button>
+                  </div>
+                  <div className="cardText">
+                    {biometricsSaved
+                      ? `Biometrics saved${biometricsSummary ? `: ${biometricsSummary}` : ""}`
+                      : biometricsSummary}
                   </div>
                 </div>
               )}
@@ -710,13 +843,64 @@ export default function HomeScreen({
               </button>
               {settingsExpanded.goals && (
                 <div className="settingsContent">
-                  <input className="input" placeholder="Calories (kcal)" />
+                  <input
+                    className="input"
+                    placeholder="Calories (kcal)"
+                    inputMode="numeric"
+                    value={goalDraft.calories}
+                    onChange={(e) =>
+                      setGoalDraft((prev) => ({
+                        ...prev,
+                        calories: e.target.value.replace(/\D/g, ""),
+                      }))
+                    }
+                  />
                   <div className="row">
-                    <input className="input" placeholder="Protein (%)" />
-                    <input className="input" placeholder="Carbs (%)" />
+                    <input
+                      className="input"
+                      placeholder="Protein (%)"
+                      inputMode="numeric"
+                      value={goalDraft.proteinPct}
+                      onChange={(e) =>
+                        setGoalDraft((prev) => ({
+                          ...prev,
+                          proteinPct: e.target.value.replace(/\D/g, ""),
+                        }))
+                      }
+                    />
+                    <input
+                      className="input"
+                      placeholder="Carbs (%)"
+                      inputMode="numeric"
+                      value={goalDraft.carbsPct}
+                      onChange={(e) =>
+                        setGoalDraft((prev) => ({
+                          ...prev,
+                          carbsPct: e.target.value.replace(/\D/g, ""),
+                        }))
+                      }
+                    />
                   </div>
                   <div className="row">
-                    <input className="input" placeholder="Fat (%)" />
+                    <input
+                      className="input"
+                      placeholder="Fat (%)"
+                      inputMode="numeric"
+                      value={goalDraft.fatPct}
+                      onChange={(e) =>
+                        setGoalDraft((prev) => ({
+                          ...prev,
+                          fatPct: e.target.value.replace(/\D/g, ""),
+                        }))
+                      }
+                    />
+                    <button className="primaryBtn" type="button" onClick={saveGoals}>
+                      Save
+                    </button>
+                  </div>
+                  <div className="cardText">
+                    Goal: {nutritionGoals?.calories ?? 1800} kcal • P {nutritionGoals?.proteinPct ?? 30}% • C{" "}
+                    {nutritionGoals?.carbsPct ?? 40}% • F {nutritionGoals?.fatPct ?? 30}%{goalsSaved ? " • Saved" : ""}
                   </div>
                 </div>
               )}

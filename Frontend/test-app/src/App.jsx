@@ -58,6 +58,19 @@ const ACCOUNTS = [
 ]
 
 const BASE_MEALS = COMMON_MEAL_SEED
+const DEFAULT_NUTRITION_GOALS = {
+  calories: 1800,
+  proteinPct: 30,
+  carbsPct: 40,
+  fatPct: 30,
+}
+const DEFAULT_BIOMETRICS = {
+  heightFt: "",
+  heightIn: "",
+  heightCm: "",
+  weightLbs: "",
+  weightKg: "",
+}
 
 const toSafeNumber = (value) => {
   const n = Number(value)
@@ -123,6 +136,8 @@ export default function App() {
   const [customFoods, setCustomFoods] = useState([])
   const [favoriteCommonMealIds, setFavoriteCommonMealIds] = useState([])
   const [mealEntries, setMealEntries] = useState([])
+  const [nutritionGoals, setNutritionGoals] = useState(DEFAULT_NUTRITION_GOALS)
+  const [biometrics, setBiometrics] = useState(DEFAULT_BIOMETRICS)
   const [selectedDate, setSelectedDate] = useState(() => new Date())
 
   const isWorkoutTab = tab === "workouts"
@@ -130,6 +145,8 @@ export default function App() {
   const mode = isWorkoutTab ? "workout" : "food"
   const currentUserId = sessionUser?.userId || sessionUser?.login || "anon"
   const favoriteCommonMealsStorageKey = `favorite_common_meals_${currentUserId}`
+  const nutritionGoalsStorageKey = `nutrition_goals_${currentUserId}`
+  const biometricsStorageKey = `biometrics_${currentUserId}`
   const selectedDateKey = useMemo(() => toDateKey(selectedDate), [selectedDate])
 
   const meals = useMemo(() => [...mealEntries], [mealEntries])
@@ -258,6 +275,64 @@ export default function App() {
       JSON.stringify(favoriteCommonMealIds)
     )
   }, [favoriteCommonMealIds, favoriteCommonMealsStorageKey])
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    try {
+      const raw = window.localStorage.getItem(nutritionGoalsStorageKey)
+      if (!raw) {
+        setNutritionGoals(DEFAULT_NUTRITION_GOALS)
+        return
+      }
+      const parsed = JSON.parse(raw)
+      const nextGoals = {
+        calories: toSafeNumber(parsed?.calories) || DEFAULT_NUTRITION_GOALS.calories,
+        proteinPct: toSafeNumber(parsed?.proteinPct),
+        carbsPct: toSafeNumber(parsed?.carbsPct),
+        fatPct: toSafeNumber(parsed?.fatPct),
+      }
+      const pctTotal = nextGoals.proteinPct + nextGoals.carbsPct + nextGoals.fatPct
+      if (pctTotal <= 0) {
+        nextGoals.proteinPct = DEFAULT_NUTRITION_GOALS.proteinPct
+        nextGoals.carbsPct = DEFAULT_NUTRITION_GOALS.carbsPct
+        nextGoals.fatPct = DEFAULT_NUTRITION_GOALS.fatPct
+      }
+      setNutritionGoals(nextGoals)
+    } catch {
+      setNutritionGoals(DEFAULT_NUTRITION_GOALS)
+    }
+  }, [nutritionGoalsStorageKey])
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    window.localStorage.setItem(nutritionGoalsStorageKey, JSON.stringify(nutritionGoals))
+  }, [nutritionGoals, nutritionGoalsStorageKey])
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    try {
+      const raw = window.localStorage.getItem(biometricsStorageKey)
+      if (!raw) {
+        setBiometrics(DEFAULT_BIOMETRICS)
+        return
+      }
+      const parsed = JSON.parse(raw)
+      setBiometrics({
+        heightFt: `${parsed?.heightFt ?? ""}`,
+        heightIn: `${parsed?.heightIn ?? ""}`,
+        heightCm: `${parsed?.heightCm ?? ""}`,
+        weightLbs: `${parsed?.weightLbs ?? ""}`,
+        weightKg: `${parsed?.weightKg ?? ""}`,
+      })
+    } catch {
+      setBiometrics(DEFAULT_BIOMETRICS)
+    }
+  }, [biometricsStorageKey])
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    window.localStorage.setItem(biometricsStorageKey, JSON.stringify(biometrics))
+  }, [biometrics, biometricsStorageKey])
   useEffect(() => {
     if (!isAuthenticated) {
       setCustomFoods([])
@@ -426,6 +501,36 @@ export default function App() {
 
   const handleDateChange = (nextDate) => setSelectedDate(nextDate)
 
+  const handleSaveNutritionGoals = (nextGoals) => {
+    const calories = Math.max(1, toSafeNumber(nextGoals?.calories) || DEFAULT_NUTRITION_GOALS.calories)
+    const proteinPct = Math.max(0, toSafeNumber(nextGoals?.proteinPct))
+    const carbsPct = Math.max(0, toSafeNumber(nextGoals?.carbsPct))
+    const fatPct = Math.max(0, toSafeNumber(nextGoals?.fatPct))
+    const pctTotal = proteinPct + carbsPct + fatPct
+
+    if (pctTotal <= 0) {
+      setNutritionGoals({
+        calories,
+        proteinPct: DEFAULT_NUTRITION_GOALS.proteinPct,
+        carbsPct: DEFAULT_NUTRITION_GOALS.carbsPct,
+        fatPct: DEFAULT_NUTRITION_GOALS.fatPct,
+      })
+      return
+    }
+
+    setNutritionGoals({ calories, proteinPct, carbsPct, fatPct })
+  }
+
+  const handleSaveBiometrics = (nextBiometrics) => {
+    setBiometrics({
+      heightFt: `${nextBiometrics?.heightFt ?? ""}`,
+      heightIn: `${nextBiometrics?.heightIn ?? ""}`,
+      heightCm: `${nextBiometrics?.heightCm ?? ""}`,
+      weightLbs: `${nextBiometrics?.weightLbs ?? ""}`,
+      weightKg: `${nextBiometrics?.weightKg ?? ""}`,
+    })
+  }
+
   const handleCreatePost = async (post) => {
     const localPost = toLocalPost({
       author: sessionUser?.displayName || sessionUser?.name || "You",
@@ -581,6 +686,10 @@ export default function App() {
                     onTogglePostLike={handleTogglePostLike}
                     onAddPostReply={handleAddPostReply}
                     onToggleCommentLike={handleToggleCommentLike}
+                    nutritionGoals={nutritionGoals}
+                    onSaveNutritionGoals={handleSaveNutritionGoals}
+                    biometrics={biometrics}
+                    onSaveBiometrics={handleSaveBiometrics}
                     usePlaceholderPosts={!isSupabaseConfigured}
                   />
                 )}
@@ -589,6 +698,7 @@ export default function App() {
                     meals={meals}
                     onEditMeal={handleEditMealInIntake}
                     onDeleteMeal={handleDeleteMealFromIntake}
+                    nutritionGoals={nutritionGoals}
                   />
                 )}
                 {tab === "workouts" && (

@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { BrowserMultiFormatReader } from "@zxing/browser";
 import "./FoodAddSheet.css";
 
 export default function FoodAddSheet({
@@ -28,19 +27,8 @@ export default function FoodAddSheet({
   const scanLockRef = useRef(false);
   const lastDetectedCodeRef = useRef("");
   const lastAddedCodeRef = useRef("");
-  const zxingRef = useRef(null);
   const videoRef = useRef(null);
   const streamRef = useRef(null);
-
-  const safeResetZxing = () => {
-    if (!zxingRef.current) return;
-    try {
-      zxingRef.current.reset();
-    } catch {
-      // Ignore scanner reset race conditions.
-    }
-    zxingRef.current = null;
-  };
 
   useEffect(() => {
     setShowCustomForm(false);
@@ -53,7 +41,6 @@ export default function FoodAddSheet({
   }, [open]);
 
   const closeCamera = () => {
-    safeResetZxing();
     if (videoRef.current) {
       try {
         videoRef.current.pause();
@@ -188,35 +175,7 @@ export default function FoodAddSheet({
   useEffect(() => {
     if (!cameraOpen || cameraMode !== "barcode") return;
     if ("BarcodeDetector" in window) return;
-    if (!videoRef.current) return;
-
-    const reader = new BrowserMultiFormatReader();
-    zxingRef.current = reader;
-
-    try {
-      reader.decodeFromVideoElement(videoRef.current, (result) => {
-        if (!result || scanLockRef.current) return;
-        const code = result.getText();
-        if (!code) return;
-        if (code === lastDetectedCodeRef.current) return;
-        lastDetectedCodeRef.current = code;
-        scanLockRef.current = true;
-        setBarcodeResult(code);
-        setScanLookup({ status: "loading", code });
-        closeCamera();
-      });
-    } catch {
-      setBarcodeError("Unable to start fallback scanner.");
-    }
-
-    return () => {
-      try {
-        reader.reset();
-      } catch {
-        // Ignore scanner reset race conditions.
-      }
-      zxingRef.current = null;
-    };
+    setBarcodeError("Barcode scanning is not supported on this browser.");
   }, [cameraOpen, cameraMode]);
 
   useEffect(() => {

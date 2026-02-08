@@ -102,6 +102,7 @@ export default function FoodAddSheet({
             formats: ["ean_13", "ean_8", "upc_a", "upc_e", "code_128", "code_39", "qr_code"],
           })
         : null;
+    const isIOS = typeof navigator !== "undefined" && /iP(ad|hone|od)/.test(navigator.userAgent);
 
     const handleDetected = (code) => {
       if (!code) return;
@@ -141,8 +142,10 @@ export default function FoodAddSheet({
 
     if (detector) {
       scanLoop();
+    } else if (isIOS) {
+      setBarcodeError("Auto-scan is limited on iOS. Enter barcode manually.");
     } else {
-      setBarcodeError("Using fallback scanner (slower on iOS).");
+      setBarcodeError("Using fallback scanner (slower on some browsers).");
     }
 
     return () => {
@@ -154,23 +157,29 @@ export default function FoodAddSheet({
   useEffect(() => {
     if (!cameraOpen || cameraMode !== "barcode") return;
     if ("BarcodeDetector" in window) return;
+    const isIOS = typeof navigator !== "undefined" && /iP(ad|hone|od)/.test(navigator.userAgent);
+    if (isIOS) return;
     if (!videoRef.current) return;
 
     const reader = new BrowserMultiFormatReader();
     zxingRef.current = reader;
 
-    reader.decodeFromVideoElement(videoRef.current, (result) => {
-      if (!result || scanLockRef.current) return;
-      const code = result.getText();
-      if (!code) return;
-      if (code === lastDetectedCodeRef.current) return;
-      lastDetectedCodeRef.current = code;
-      scanLockRef.current = true;
-      setBarcodeResult(code);
-      setScanLookup({ status: "loading", code });
-      reader.reset();
-      zxingRef.current = null;
-    });
+    try {
+      reader.decodeFromVideoElement(videoRef.current, (result) => {
+        if (!result || scanLockRef.current) return;
+        const code = result.getText();
+        if (!code) return;
+        if (code === lastDetectedCodeRef.current) return;
+        lastDetectedCodeRef.current = code;
+        scanLockRef.current = true;
+        setBarcodeResult(code);
+        setScanLookup({ status: "loading", code });
+        reader.reset();
+        zxingRef.current = null;
+      });
+    } catch {
+      setBarcodeError("Unable to start fallback scanner.");
+    }
 
     return () => {
       reader.reset();

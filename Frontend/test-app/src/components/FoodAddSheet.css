@@ -45,6 +45,7 @@
   display: grid;
   grid-template-rows: auto 1fr;
   position: relative;
+  min-height: 0;
 }
 
 .foodAddPage .sheetHeader {
@@ -65,6 +66,8 @@
   grid-template-rows: auto 1fr;
   gap: 12px;
   padding-top: 44px;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .mealTabs {
@@ -101,6 +104,8 @@
 .mealTabPanel {
   display: grid;
   gap: 10px;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .xBtn {
@@ -215,7 +220,10 @@
   display: grid;
   gap: 8px;
   align-content: start;
-  overflow: auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
   padding-bottom: 8px;
 }
 

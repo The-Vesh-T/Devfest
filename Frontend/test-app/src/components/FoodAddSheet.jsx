@@ -1,19 +1,29 @@
 import { useEffect, useRef, useState } from "react";
 import { BrowserMultiFormatReader } from "@zxing/browser";
-import { getCatalogFoodByBarcode, upsertCatalogFood } from "../lib/foodRepo";
 import "./FoodAddSheet.css";
+
+function FavoriteStarIcon({ active }) {
+  return (
+    <svg className="starIcon" viewBox="-2 -2 28 28" aria-hidden="true">
+      <path
+        d="m12 2.2 2.95 5.98 6.6.96-4.77 4.65 1.13 6.57L12 17.25 6.09 20.36l1.13-6.57L2.45 9.14l6.6-.96L12 2.2Z"
+        fill={active ? "currentColor" : "none"}
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
 
 export default function FoodAddSheet({
   open,
   onClose,
   mode,
   onCreateFood,
-  allMeals,
-  favoriteMeals,
   customFoods,
-  isMealFavorite,
-  onToggleMealFavorite,
-  onAddMeal,
+  onToggleFavorite,
   onAddMealFromScan,
 }) {
   const [foodView, setFoodView] = useState("root"); // root | add-meal
@@ -230,32 +240,7 @@ export default function FoodAddSheet({
     let cancelled = false;
 
     const fetchFood = async () => {
-      const commitMeal = (food) => {
-        if (cancelled || !food) return;
-        onAddMealFromScan?.({
-          name: food.name,
-          calories: food.calories,
-          protein: food.protein,
-          carbs: food.carbs,
-          fat: food.fat,
-          detail: food.detail || "Scanned food",
-          barcode: scanLookup.code,
-        });
-
-        lastAddedCodeRef.current = scanLookup.code;
-        setScanLookup({ status: "success", code: scanLookup.code, name: food.name });
-      };
-
       try {
-        const { data: cachedFood, error: cacheError } = await getCatalogFoodByBarcode(scanLookup.code);
-        if (cacheError) {
-          console.error("Failed to read barcode from cache", cacheError);
-        }
-        if (cachedFood) {
-          commitMeal(cachedFood);
-          return;
-        }
-
         const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${scanLookup.code}.json`);
         const data = await res.json();
         if (cancelled) return;
@@ -276,25 +261,17 @@ export default function FoodAddSheet({
         const carbs = toSafeMacro(nutr.carbohydrates_100g ?? nutr.carbohydrates_serving ?? 0);
         const fat = toSafeMacro(nutr.fat_100g ?? nutr.fat_serving ?? 0);
 
-        const scannedFood = {
+        onAddMealFromScan?.({
           name,
           calories,
           protein,
           carbs,
           fat,
           detail: "Scanned food",
-        };
-
-        commitMeal(scannedFood);
-
-        const { error: cacheWriteError } = await upsertCatalogFood({
-          barcode: scanLookup.code,
-          food: scannedFood,
-          source: "openfoodfacts",
         });
-        if (cacheWriteError) {
-          console.error("Failed to cache scanned barcode", cacheWriteError);
-        }
+
+        lastAddedCodeRef.current = scanLookup.code;
+        setScanLookup({ status: "success", code: scanLookup.code, name });
       } catch {
         if (!cancelled) {
           setScanLookup({ status: "error", code: scanLookup.code, message: "Lookup failed." });
@@ -345,25 +322,6 @@ export default function FoodAddSheet({
     setServings("");
     setCaloriesPerServing("");
     setShowCustomForm(false);
-  };
-
-  const handleMealPick = async (food) => {
-    if (!food) return;
-    await onAddMeal?.({
-      name: food.name,
-      calories: food.calories,
-      protein: food.protein,
-      carbs: food.carbs,
-      fat: food.fat,
-      detail: food.detail,
-      barcode: food.barcode ?? null,
-    });
-    handleClose();
-  };
-
-  const formatCalories = (food) => {
-    const value = Number(food?.calories);
-    return `${Number.isFinite(value) ? Math.round(value) : 0} kcal`;
   };
 
   return (
@@ -454,82 +412,32 @@ export default function FoodAddSheet({
 
                 <div className="mealTabPanel" role="tabpanel">
                   {mealTab === "all" && (
-                    <div className="customList">
+                    <div className="sheetOption">
                       <div className="sheetOptionTitle">All meals</div>
-                      {allMeals && allMeals.length > 0 ? (
-                        allMeals.map((food) => (
-                          <div
-                            key={food.id}
-                            className="sheetOption rowBetween mealPickRow"
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => handleMealPick(food)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter" || e.key === " ") {
-                                e.preventDefault();
-                                handleMealPick(food);
-                              }
-                            }}
-                          >
-                            <div>
-                              <div className="sheetOptionTitle">{food.name}</div>
-                              <div className="sheetOptionSub">{food.detail}</div>
-                              <div className="sheetOptionSub">{formatCalories(food)}</div>
-                            </div>
-                            <button
-                              className={`starBtn ${isMealFavorite?.(food) ? "active" : ""}`}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onToggleMealFavorite?.(food);
-                              }}
-                              aria-label="Toggle favorite"
-                            >
-                              {isMealFavorite?.(food) ? "★" : "☆"}
-                            </button>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="sheetOption">
-                          <div className="sheetOptionSub">No meals yet.</div>
-                        </div>
-                      )}
+                      <div className="sheetOptionSub">Browse the full database</div>
                     </div>
                   )}
                   {mealTab === "favorites" && (
                     <div className="customList">
                       <div className="sheetOptionTitle">Favorite meals</div>
-                      {favoriteMeals && favoriteMeals.length > 0 ? (
-                        favoriteMeals.map((food) => (
-                            <div
-                              key={food.id}
-                              className="sheetOption rowBetween mealPickRow"
-                              role="button"
-                              tabIndex={0}
-                              onClick={() => handleMealPick(food)}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter" || e.key === " ") {
-                                  e.preventDefault();
-                                  handleMealPick(food);
-                                }
-                              }}
-                            >
+                      {customFoods && customFoods.some((food) => food.favorite) ? (
+                        customFoods
+                          .filter((food) => food.favorite)
+                          .map((food) => (
+                            <div key={food.id} className="sheetOption rowBetween">
                               <div>
                                 <div className="sheetOptionTitle">{food.name}</div>
                                 <div className="sheetOptionSub">{food.detail}</div>
-                                <div className="sheetOptionSub">{formatCalories(food)}</div>
                               </div>
                               <button
-                                className={`starBtn ${isMealFavorite?.(food) ? "active" : ""}`}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onToggleMealFavorite?.(food);
-                                }}
+                                className={`starBtn ${food.favorite ? "active" : ""}`}
+                                onClick={() => onToggleFavorite?.(food.id)}
                                 aria-label="Toggle favorite"
                               >
-                                {isMealFavorite?.(food) ? "★" : "☆"}
+                                <FavoriteStarIcon active={food.favorite} />
                               </button>
                             </div>
-                        ))
+                          ))
                       ) : (
                         <div className="sheetOption">
                           <div className="sheetOptionSub">No favorites yet.</div>
@@ -553,33 +461,17 @@ export default function FoodAddSheet({
                             <div className="sheetOptionTitle">Custom foods</div>
                             {customFoods && customFoods.length > 0 ? (
                               customFoods.map((food) => (
-                                <div
-                                  key={food.id}
-                                  className="sheetOption rowBetween mealPickRow"
-                                  role="button"
-                                  tabIndex={0}
-                                  onClick={() => handleMealPick(food)}
-                                  onKeyDown={(e) => {
-                                    if (e.key === "Enter" || e.key === " ") {
-                                      e.preventDefault();
-                                      handleMealPick(food);
-                                    }
-                                  }}
-                                >
+                                <div key={food.id} className="sheetOption rowBetween">
                                   <div>
                                     <div className="sheetOptionTitle">{food.name}</div>
                                     <div className="sheetOptionSub">{food.detail}</div>
-                                    <div className="sheetOptionSub">{formatCalories(food)}</div>
                                   </div>
                                   <button
-                                    className={`starBtn ${isMealFavorite?.(food) ? "active" : ""}`}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      onToggleMealFavorite?.(food);
-                                    }}
+                                    className={`starBtn ${food.favorite ? "active" : ""}`}
+                                    onClick={() => onToggleFavorite?.(food.id)}
                                     aria-label="Toggle favorite"
                                   >
-                                    {isMealFavorite?.(food) ? "★" : "☆"}
+                                    <FavoriteStarIcon active={food.favorite} />
                                   </button>
                                 </div>
                               ))

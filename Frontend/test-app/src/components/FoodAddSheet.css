@@ -1,21 +1,23 @@
 .sheetActions {
   display: grid;
-  gap: 10px;
+  gap: 14px;
 }
 
 .sheetAction {
   width: 100%;
-  padding: 12px 14px;
-  border-radius: 14px;
+  padding: 18px 16px;
+  min-height: 72px;
+  border-radius: 16px;
   border: 1px solid rgba(255,255,255,0.12);
   background: rgba(255,255,255,0.04);
   color: #f2f2f2;
   text-align: left;
   font-weight: 900;
+  font-size: 15px;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .sheetAction:active {
@@ -23,11 +25,11 @@
 }
 
 .sheetActionIcon {
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
   display: grid;
   place-items: center;
-  font-size: 16px;
+  font-size: 18px;
 }
 
 .sheetPage {

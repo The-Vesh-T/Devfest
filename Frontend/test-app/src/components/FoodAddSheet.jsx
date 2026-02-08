@@ -3,6 +3,55 @@ import { BrowserMultiFormatReader } from "@zxing/browser";
 import { getCatalogFoodByBarcode, upsertCatalogFood } from "../lib/foodRepo";
 import "./FoodAddSheet.css";
 
+const toSafeInt = (value) => {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n < 0) return 0;
+  return Math.round(n);
+};
+
+const cleanEnvValue = (value) => `${value ?? ""}`.trim().replace(/^['"]|['"]$/g, "");
+
+const sanitizeGeminiFood = (payload) => {
+  const name = `${payload?.name ?? "Photo meal"}`.trim() || "Photo meal";
+  const detail = `${payload?.detail ?? "Estimated from photo"}`.trim() || "Estimated from photo";
+  return {
+    name,
+    calories: toSafeInt(payload?.calories),
+    protein: toSafeInt(payload?.protein),
+    carbs: toSafeInt(payload?.carbs),
+    fat: toSafeInt(payload?.fat),
+    detail,
+  };
+};
+
+const parseGeminiJson = (rawText) => {
+  const text = `${rawText ?? ""}`.trim();
+  if (!text) return null;
+  const cleaned = text.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "").trim();
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    return null;
+  }
+};
+
+const GEMINI_MODELS = ["gemini-2.0-flash", "gemini-1.5-flash"];
+const BARCODE_DUPLICATE_COOLDOWN_MS = 12000;
+const GEMINI_KEY_STORAGE_KEY = "valetudo_gemini_api_key";
+
+const toGeminiErrorMessage = (rawText, statusCode) => {
+  const fallback = `Gemini request failed (${statusCode})`;
+  if (!rawText) return fallback;
+  try {
+    const parsed = JSON.parse(rawText);
+    const message = `${parsed?.error?.message ?? ""}`.trim();
+    if (message) return message;
+  } catch {
+    // Keep fallback path.
+  }
+  return rawText.slice(0, 220) || fallback;
+};
+
 export default function FoodAddSheet({
   open,
   onClose,
@@ -30,12 +79,24 @@ export default function FoodAddSheet({
   const [manualBarcode, setManualBarcode] = useState("");
   const [capturedImage, setCapturedImage] = useState("");
   const [scanLookup, setScanLookup] = useState(null);
+  const [photoLookup, setPhotoLookup] = useState(null);
   const scanLockRef = useRef(false);
+  const photoLockRef = useRef(false);
   const lastDetectedCodeRef = useRef("");
   const lastAddedCodeRef = useRef("");
+  const lastAddedAtRef = useRef(0);
+  const barcodeSessionRef = useRef(0);
   const zxingRef = useRef(null);
   const videoRef = useRef(null);
   const streamRef = useRef(null);
+  const envGeminiApiKey = cleanEnvValue(
+    import.meta.env.VITE_GEMINI_API_KEY ||
+      import.meta.env.VITE_GEMINI_KEY ||
+      import.meta.env.NEXT_PUBLIC_GEMINI_API_KEY ||
+      import.meta.env.NEXT_PUBLIC_GEMINI_KEY
+  );
+  const [localGeminiApiKey, setLocalGeminiApiKey] = useState("");
+  const geminiApiKey = cleanEnvValue(envGeminiApiKey || localGeminiApiKey);
 
   const safeResetZxing = () => {
     if (!zxingRef.current) return;
@@ -54,8 +115,109 @@ export default function FoodAddSheet({
   useEffect(() => {
     if (open) {
       setShowCustomForm(false);
+      setCameraMode("barcode");
+      setPhotoLookup(null);
+      photoLockRef.current = false;
     }
   }, [open]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const saved = cleanEnvValue(window.localStorage.getItem(GEMINI_KEY_STORAGE_KEY) || "");
+      if (saved) setLocalGeminiApiKey(saved);
+    } catch {
+      // Ignore localStorage access issues.
+    }
+  }, []);
+
+  const persistGeminiKey = (value) => {
+    const cleaned = cleanEnvValue(value);
+    if (!cleaned) return "";
+    setLocalGeminiApiKey(cleaned);
+    if (typeof window !== "undefined") {
+      try {
+        window.localStorage.setItem(GEMINI_KEY_STORAGE_KEY, cleaned);
+      } catch {
+        // Ignore localStorage write issues.
+      }
+    }
+    return cleaned;
+  };
+
+  const estimateFoodFromPhoto = async (imageDataUrl) => {
+    let activeGeminiApiKey = cleanEnvValue(geminiApiKey);
+    if (!activeGeminiApiKey && typeof window !== "undefined") {
+      const typed = window.prompt("Enter Gemini API key for Photo Log");
+      activeGeminiApiKey = persistGeminiKey(typed || "");
+    }
+    if (!activeGeminiApiKey) {
+      throw new Error("Missing Gemini API key");
+    }
+    const [, base64Part] = `${imageDataUrl}`.split(",");
+    if (!base64Part) {
+      throw new Error("Invalid image capture");
+    }
+
+    const prompt =
+      "Estimate nutrition for the single main food in this image. " +
+      "Return strict JSON only with keys: name, calories, protein, carbs, fat, detail. " +
+      "Use integer values for macros and calories. Keep detail short.";
+
+    const requestBody = {
+      contents: [
+        {
+          parts: [
+            { text: prompt },
+            {
+              inlineData: {
+                mimeType: "image/jpeg",
+                data: base64Part,
+              },
+            },
+          ],
+        },
+      ],
+      generationConfig: {
+        temperature: 0.2,
+        responseMimeType: "application/json",
+      },
+    };
+
+    let lastError = null;
+    for (const model of GEMINI_MODELS) {
+      try {
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(activeGeminiApiKey)}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(requestBody),
+          }
+        );
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(toGeminiErrorMessage(errorText, response.status));
+        }
+
+        const data = await response.json();
+        const combinedText = (data?.candidates?.[0]?.content?.parts || [])
+          .map((part) => part?.text || "")
+          .join(" ")
+          .trim();
+
+        const parsed = parseGeminiJson(combinedText);
+        if (!parsed) {
+          throw new Error("Gemini returned an invalid response");
+        }
+        return sanitizeGeminiFood(parsed);
+      } catch (error) {
+        lastError = error;
+      }
+    }
+    throw lastError || new Error("Unable to estimate calories from photo.");
+  };
 
   const closeCamera = () => {
     safeResetZxing();
@@ -81,6 +243,46 @@ export default function FoodAddSheet({
     setCameraOpen(false);
   };
 
+  const resetSheetAndClose = () => {
+    closeCamera();
+    setCameraMode("barcode");
+    setFoodView("root");
+    setMealTab("all");
+    setShowCustomForm(false);
+    setFoodName("");
+    setServings("");
+    setCaloriesPerServing("");
+    setScanLookup(null);
+    setBarcodeResult("");
+    onClose?.();
+  };
+
+  const shouldIgnoreDetectedCode = (code, sessionId) => {
+    if (!code) return true;
+    if (sessionId !== barcodeSessionRef.current) return true;
+    if (scanLockRef.current) return true;
+
+    const isRecentDuplicate =
+      code === lastAddedCodeRef.current &&
+      Date.now() - lastAddedAtRef.current < BARCODE_DUPLICATE_COOLDOWN_MS;
+    if (isRecentDuplicate) {
+      setBarcodeError("Same as last scan. Scan a different barcode.");
+      return true;
+    }
+    if (code === lastDetectedCodeRef.current) return true;
+    return false;
+  };
+
+  const beginBarcodeLookup = (code, sessionId) => {
+    if (shouldIgnoreDetectedCode(code, sessionId)) return;
+    lastDetectedCodeRef.current = code;
+    scanLockRef.current = true;
+    setBarcodeError("");
+    setBarcodeResult(code);
+    setScanLookup({ status: "loading", code, sessionId });
+    closeCamera();
+  };
+
   useEffect(() => {
     if (!cameraOpen) return;
 
@@ -88,7 +290,6 @@ export default function FoodAddSheet({
     setCameraError("");
     setBarcodeError("");
     lastDetectedCodeRef.current = "";
-    lastAddedCodeRef.current = "";
     setManualBarcode("");
 
     const startCamera = async () => {
@@ -135,8 +336,17 @@ export default function FoodAddSheet({
 
   useEffect(() => {
     if (!cameraOpen || cameraMode !== "barcode") return;
+    barcodeSessionRef.current += 1;
+    scanLockRef.current = false;
+    lastDetectedCodeRef.current = "";
+    setBarcodeError("");
+  }, [cameraOpen, cameraMode]);
+
+  useEffect(() => {
+    if (!cameraOpen || cameraMode !== "barcode") return;
 
     let cancelled = false;
+    const sessionId = barcodeSessionRef.current;
     scanLockRef.current = false;
     const detector =
       "BarcodeDetector" in window
@@ -146,15 +356,7 @@ export default function FoodAddSheet({
         : null;
 
     const handleDetected = (code) => {
-      if (!code) return;
-      if (code === lastDetectedCodeRef.current) {
-        return;
-      }
-      lastDetectedCodeRef.current = code;
-      scanLockRef.current = true;
-      setBarcodeResult(code);
-      setScanLookup({ status: "loading", code });
-      closeCamera();
+      beginBarcodeLookup(code, sessionId);
     };
 
     const scanLoop = async () => {
@@ -194,21 +396,16 @@ export default function FoodAddSheet({
     if (!cameraOpen || cameraMode !== "barcode") return;
     if ("BarcodeDetector" in window) return;
     if (!videoRef.current) return;
+    const sessionId = barcodeSessionRef.current;
 
     const reader = new BrowserMultiFormatReader();
     zxingRef.current = reader;
 
     try {
       reader.decodeFromVideoElement(videoRef.current, (result) => {
-        if (!result || scanLockRef.current) return;
+        if (!result) return;
         const code = result.getText();
-        if (!code) return;
-        if (code === lastDetectedCodeRef.current) return;
-        lastDetectedCodeRef.current = code;
-        scanLockRef.current = true;
-        setBarcodeResult(code);
-        setScanLookup({ status: "loading", code });
-        closeCamera();
+        beginBarcodeLookup(code, sessionId);
       });
     } catch {
       setBarcodeError("Unable to start fallback scanner.");
@@ -225,14 +422,20 @@ export default function FoodAddSheet({
   }, [cameraOpen, cameraMode]);
 
   useEffect(() => {
-    if (!scanLookup || !scanLookup.code) return;
-    if (lastAddedCodeRef.current === scanLookup.code) return;
+    if (!scanLookup || scanLookup.status !== "loading" || !scanLookup.code) return;
+    if (scanLookup.sessionId !== barcodeSessionRef.current) return;
+    const isRecentDuplicate =
+      scanLookup.code === lastAddedCodeRef.current &&
+      Date.now() - lastAddedAtRef.current < BARCODE_DUPLICATE_COOLDOWN_MS;
+    if (isRecentDuplicate) return;
     let cancelled = false;
+    const activeSessionId = scanLookup.sessionId;
 
     const fetchFood = async () => {
-      const commitMeal = (food) => {
+      const commitMeal = async (food) => {
         if (cancelled || !food) return;
-        onAddMealFromScan?.({
+        if (activeSessionId !== barcodeSessionRef.current) return;
+        await onAddMealFromScan?.({
           name: food.name,
           calories: food.calories,
           protein: food.protein,
@@ -241,9 +444,13 @@ export default function FoodAddSheet({
           detail: food.detail || "Scanned food",
           barcode: scanLookup.code,
         });
+        if (cancelled) return;
+        if (activeSessionId !== barcodeSessionRef.current) return;
 
         lastAddedCodeRef.current = scanLookup.code;
-        setScanLookup({ status: "success", code: scanLookup.code, name: food.name });
+        lastAddedAtRef.current = Date.now();
+        setScanLookup({ status: "success", code: scanLookup.code, name: food.name, sessionId: activeSessionId });
+        resetSheetAndClose();
       };
 
       try {
@@ -252,7 +459,7 @@ export default function FoodAddSheet({
           console.error("Failed to read barcode from cache", cacheError);
         }
         if (cachedFood) {
-          commitMeal(cachedFood);
+          await commitMeal(cachedFood);
           return;
         }
 
@@ -260,7 +467,9 @@ export default function FoodAddSheet({
         const data = await res.json();
         if (cancelled) return;
         if (data.status !== 1 || !data.product) {
-          setScanLookup({ status: "error", code: scanLookup.code, message: "No product found." });
+          if (activeSessionId === barcodeSessionRef.current) {
+            setScanLookup({ status: "error", code: scanLookup.code, message: "No product found.", sessionId: activeSessionId });
+          }
           return;
         }
         const p = data.product;
@@ -285,7 +494,7 @@ export default function FoodAddSheet({
           detail: "Scanned food",
         };
 
-        commitMeal(scannedFood);
+        await commitMeal(scannedFood);
 
         const { error: cacheWriteError } = await upsertCatalogFood({
           barcode: scanLookup.code,
@@ -297,7 +506,9 @@ export default function FoodAddSheet({
         }
       } catch {
         if (!cancelled) {
-          setScanLookup({ status: "error", code: scanLookup.code, message: "Lookup failed." });
+          if (activeSessionId === barcodeSessionRef.current) {
+            setScanLookup({ status: "error", code: scanLookup.code, message: "Lookup failed.", sessionId: activeSessionId });
+          }
         }
       }
     };
@@ -312,14 +523,7 @@ export default function FoodAddSheet({
   if (!open) return null;
 
   const handleClose = () => {
-    closeCamera();
-    setFoodView("root");
-    setMealTab("all");
-    setShowCustomForm(false);
-    setFoodName("");
-    setServings("");
-    setCaloriesPerServing("");
-    onClose();
+    resetSheetAndClose();
   };
 
   const handleCreateFood = () => {
@@ -366,6 +570,48 @@ export default function FoodAddSheet({
     return `${Number.isFinite(value) ? Math.round(value) : 0} kcal`;
   };
 
+  const handlePhotoCapture = async () => {
+    if (photoLockRef.current) return;
+    const video = videoRef.current;
+    if (!video) return;
+    photoLockRef.current = true;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth || 720;
+    canvas.height = video.videoHeight || 960;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      photoLockRef.current = false;
+      return;
+    }
+
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const imageDataUrl = canvas.toDataURL("image/jpeg", 0.88);
+    setCapturedImage(imageDataUrl);
+    closeCamera();
+    setPhotoLookup({ status: "loading" });
+
+    try {
+      const estimatedFood = await estimateFoodFromPhoto(imageDataUrl);
+      await onAddMealFromPhoto?.(estimatedFood);
+      setPhotoLookup({
+        status: "success",
+        name: estimatedFood.name,
+        calories: estimatedFood.calories,
+      });
+      handleClose();
+    } catch (error) {
+      console.error("Photo log lookup failed", error);
+      const message = `${error?.message ?? ""}`.trim();
+      setPhotoLookup({
+        status: "error",
+        message: message || "Unable to estimate calories from photo.",
+      });
+    } finally {
+      photoLockRef.current = false;
+    }
+  };
+
   return (
     <div className={`sheetBackdrop ${mode === "food" && foodView === "add-meal" ? "foodPageBackdrop" : ""}`} onClick={handleClose} role="presentation">
       <div
@@ -396,29 +642,18 @@ export default function FoodAddSheet({
                     setCameraMode("barcode");
                     setCameraError("");
                     setBarcodeError("");
+                    setScanLookup(null);
+                    setBarcodeResult("");
                     setCameraOpen(true);
                   }}
                 >
                   <span className="sheetActionIcon">▮▯▮</span>
                   Scan barcode
                 </button>
-                <button
-                  className="sheetAction"
-                  onClick={() => {
-                    setCameraMode("photo");
-                    setCameraError("");
-                    setBarcodeError("");
-                    setCameraOpen(true);
-                  }}
-                >
-                  <span className="sheetActionIcon">📷</span>
-                  Photo Log
-                </button>
                 {barcodeResult ? <div className="scanResult">Last scan: {barcodeResult}</div> : null}
                 {scanLookup?.status === "loading" ? <div className="scanResult">Looking up food…</div> : null}
                 {scanLookup?.status === "success" ? <div className="scanResult">Added: {scanLookup.name}</div> : null}
                 {scanLookup?.status === "error" ? <div className="scanResult">Lookup failed: {scanLookup.message}</div> : null}
-                {capturedImage ? <img className="capturedPreview" src={capturedImage} alt="Captured food" /> : null}
               </div>
             ) : (
               <div className="foodAddBody">
@@ -645,7 +880,7 @@ export default function FoodAddSheet({
         <div className="cameraBackdrop" onClick={closeCamera} role="presentation">
           <div className="cameraCard" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
             <div className="cameraHeader">
-              <div className="cameraTitle">{cameraMode === "barcode" ? "Scan barcode" : "Photo log"}</div>
+              <div className="cameraTitle">Scan barcode</div>
               <button className="xBtn" onClick={closeCamera} aria-label="Close camera">
                 ✕
               </button>
@@ -654,9 +889,7 @@ export default function FoodAddSheet({
               <video ref={videoRef} className="cameraVideo" autoPlay playsInline />
               {cameraError ? <div className="cameraError">{cameraError}</div> : null}
               {barcodeError ? <div className="cameraWarn">{barcodeError}</div> : null}
-              <div className="cameraHint">
-                {cameraMode === "barcode" ? "Center the barcode in the frame." : "Frame your food and tap to capture."}
-              </div>
+              <div className="cameraHint">Center the barcode in the frame.</div>
               {cameraMode === "barcode" && scanLookup?.status === "loading" ? (
                 <div className="cameraScanStatus">Looking up barcode…</div>
               ) : null}
@@ -675,34 +908,12 @@ export default function FoodAddSheet({
                     onClick={() => {
                       const code = manualBarcode.trim();
                       if (!code) return;
-                      setBarcodeResult(code);
-                      setScanLookup({ status: "loading", code });
-                      closeCamera();
+                      beginBarcodeLookup(code, barcodeSessionRef.current);
                     }}
                   >
                     Look up
                   </button>
                 </div>
-              ) : null}
-              {cameraMode === "photo" && !cameraError ? (
-                <button
-                  className="cameraCapture"
-                  type="button"
-                  onClick={() => {
-                    const video = videoRef.current;
-                    if (!video) return;
-                    const canvas = document.createElement("canvas");
-                    canvas.width = video.videoWidth || 720;
-                    canvas.height = video.videoHeight || 960;
-                    const ctx = canvas.getContext("2d");
-                    if (!ctx) return;
-                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                    setCapturedImage(canvas.toDataURL("image/jpeg", 0.9));
-                    closeCamera();
-                  }}
-                >
-                  Capture
-                </button>
               ) : null}
             </div>
           </div>

@@ -103,6 +103,21 @@ export default function FoodAddSheet({
           })
         : null;
 
+    const handleDetected = (code) => {
+      if (!code) return;
+      if (code === lastDetectedCodeRef.current) {
+        return;
+      }
+      lastDetectedCodeRef.current = code;
+      scanLockRef.current = true;
+      setBarcodeResult(code);
+      setScanLookup({ status: "loading", code });
+      if (zxingRef.current) {
+        zxingRef.current.reset();
+        zxingRef.current = null;
+      }
+    };
+
     const scanLoop = async () => {
       if (cancelled || !videoRef.current || scanLockRef.current) return;
       if (videoRef.current.readyState < 2) {
@@ -114,16 +129,7 @@ export default function FoodAddSheet({
           const codes = await detector.detect(videoRef.current);
           if (codes && codes.length > 0) {
             const code = codes[0].rawValue || "";
-            if (!code) return;
-            if (code === lastDetectedCodeRef.current) {
-              closeCamera();
-              return;
-            }
-            lastDetectedCodeRef.current = code;
-            scanLockRef.current = true;
-            setBarcodeResult(code);
-            setScanLookup({ status: "loading", code });
-            closeCamera();
+            handleDetected(code);
             return;
           }
         }
@@ -157,15 +163,13 @@ export default function FoodAddSheet({
       if (!result || scanLockRef.current) return;
       const code = result.getText();
       if (!code) return;
-      if (code === lastDetectedCodeRef.current) {
-        closeCamera();
-        return;
-      }
+      if (code === lastDetectedCodeRef.current) return;
       lastDetectedCodeRef.current = code;
       scanLockRef.current = true;
       setBarcodeResult(code);
       setScanLookup({ status: "loading", code });
-      closeCamera();
+      reader.reset();
+      zxingRef.current = null;
     });
 
     return () => {
@@ -207,9 +211,11 @@ export default function FoodAddSheet({
 
         lastAddedCodeRef.current = scanLookup.code;
         setScanLookup({ status: "success", code: scanLookup.code, name });
+        closeCamera();
       } catch {
         if (!cancelled) {
           setScanLookup({ status: "error", code: scanLookup.code, message: "Lookup failed." });
+          closeCamera();
         }
       }
     };
@@ -484,6 +490,9 @@ export default function FoodAddSheet({
               <div className="cameraHint">
                 {cameraMode === "barcode" ? "Center the barcode in the frame." : "Frame your food and tap to capture."}
               </div>
+              {cameraMode === "barcode" && scanLookup?.status === "loading" ? (
+                <div className="cameraScanStatus">Looking up barcode…</div>
+              ) : null}
               {cameraMode === "barcode" ? (
                 <div className="barcodeManual">
                   <input

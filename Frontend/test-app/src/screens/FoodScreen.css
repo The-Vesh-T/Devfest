@@ -102,6 +102,80 @@
 
 .hint { margin-top: 12px; color: rgba(255,255,255,0.55); font-size: 13px; }
 
+.mealCard {
+  cursor: pointer;
+}
+
+.mealCard:active {
+  transform: translateY(1px);
+}
+
+.mealEditBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.68);
+  display: grid;
+  place-items: center;
+  z-index: 40;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.mealEditCard {
+  width: min(360px, 100%);
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: #10141a;
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+.mealEditHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.mealEditTitle {
+  font-weight: 900;
+}
+
+.mealEditActions {
+  display: grid;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.mealEditMacroRow {
+  align-items: start;
+}
+
+.mealEditField {
+  display: grid;
+  gap: 4px;
+}
+
+.mealEditField .input {
+  margin-bottom: 0;
+}
+
+.mealEditLabel {
+  font-size: 12px;
+  color: rgba(255,255,255,0.68);
+  font-weight: 800;
+  letter-spacing: 0.2px;
+}
+
+.mealDeleteBtn {
+  background: #ef4444;
+  color: #fff;
+}
+
+.mealDeleteBtn:hover {
+  background: #dc2626;
+}
+
 .mealMacros {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

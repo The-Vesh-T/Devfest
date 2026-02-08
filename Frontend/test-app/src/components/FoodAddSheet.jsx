@@ -9,8 +9,10 @@ export default function FoodAddSheet({
   mode,
   onCreateFood,
   allMeals,
+  favoriteMeals,
   customFoods,
-  onToggleFavorite,
+  isMealFavorite,
+  onToggleMealFavorite,
   onAddMeal,
   onAddMealFromScan,
 }) {
@@ -359,6 +361,11 @@ export default function FoodAddSheet({
     handleClose();
   };
 
+  const formatCalories = (food) => {
+    const value = Number(food?.calories);
+    return `${Number.isFinite(value) ? Math.round(value) : 0} kcal`;
+  };
+
   return (
     <div className={`sheetBackdrop ${mode === "food" && foodView === "add-meal" ? "foodPageBackdrop" : ""}`} onClick={handleClose} role="presentation">
       <div
@@ -467,8 +474,18 @@ export default function FoodAddSheet({
                             <div>
                               <div className="sheetOptionTitle">{food.name}</div>
                               <div className="sheetOptionSub">{food.detail}</div>
+                              <div className="sheetOptionSub">{formatCalories(food)}</div>
                             </div>
-                            <div className="sheetOptionSub">{food.calories} kcal</div>
+                            <button
+                              className={`starBtn ${isMealFavorite?.(food) ? "active" : ""}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onToggleMealFavorite?.(food);
+                              }}
+                              aria-label="Toggle favorite"
+                            >
+                              {isMealFavorite?.(food) ? "★" : "☆"}
+                            </button>
                           </div>
                         ))
                       ) : (
@@ -481,10 +498,8 @@ export default function FoodAddSheet({
                   {mealTab === "favorites" && (
                     <div className="customList">
                       <div className="sheetOptionTitle">Favorite meals</div>
-                      {customFoods && customFoods.some((food) => food.favorite) ? (
-                        customFoods
-                          .filter((food) => food.favorite)
-                          .map((food) => (
+                      {favoriteMeals && favoriteMeals.length > 0 ? (
+                        favoriteMeals.map((food) => (
                             <div
                               key={food.id}
                               className="sheetOption rowBetween mealPickRow"
@@ -501,19 +516,20 @@ export default function FoodAddSheet({
                               <div>
                                 <div className="sheetOptionTitle">{food.name}</div>
                                 <div className="sheetOptionSub">{food.detail}</div>
+                                <div className="sheetOptionSub">{formatCalories(food)}</div>
                               </div>
                               <button
-                                className={`starBtn ${food.favorite ? "active" : ""}`}
+                                className={`starBtn ${isMealFavorite?.(food) ? "active" : ""}`}
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  onToggleFavorite?.(food.id);
+                                  onToggleMealFavorite?.(food);
                                 }}
                                 aria-label="Toggle favorite"
                               >
-                                {food.favorite ? "★" : "☆"}
+                                {isMealFavorite?.(food) ? "★" : "☆"}
                               </button>
                             </div>
-                          ))
+                        ))
                       ) : (
                         <div className="sheetOption">
                           <div className="sheetOptionSub">No favorites yet.</div>
@@ -553,16 +569,17 @@ export default function FoodAddSheet({
                                   <div>
                                     <div className="sheetOptionTitle">{food.name}</div>
                                     <div className="sheetOptionSub">{food.detail}</div>
+                                    <div className="sheetOptionSub">{formatCalories(food)}</div>
                                   </div>
                                   <button
-                                    className={`starBtn ${food.favorite ? "active" : ""}`}
+                                    className={`starBtn ${isMealFavorite?.(food) ? "active" : ""}`}
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      onToggleFavorite?.(food.id);
+                                      onToggleMealFavorite?.(food);
                                     }}
                                     aria-label="Toggle favorite"
                                   >
-                                    {food.favorite ? "★" : "☆"}
+                                    {isMealFavorite?.(food) ? "★" : "☆"}
                                   </button>
                                 </div>
                               ))

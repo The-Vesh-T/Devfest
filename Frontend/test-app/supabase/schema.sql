@@ -33,6 +33,31 @@ create table if not exists meal_entries (
 
 create index if not exists meal_entries_user_date_idx on meal_entries (user_id, consumed_on desc, created_at desc);
 
+create table if not exists common_meals (
+  id uuid primary key default gen_random_uuid(),
+  name text not null unique,
+  calories int not null default 0,
+  protein int not null default 0,
+  carbs int not null default 0,
+  fat int not null default 0,
+  detail text not null default '',
+  created_at timestamptz not null default now()
+);
+
+create index if not exists common_meals_created_idx on common_meals (created_at asc);
+
+insert into common_meals (name, calories, protein, carbs, fat, detail)
+values
+  ('Chicken Rice Bowl', 520, 40, 58, 14, 'Grilled chicken • jasmine rice • mixed veggies'),
+  ('Turkey Sandwich', 430, 30, 46, 12, 'Turkey breast • whole wheat bread • light mayo'),
+  ('Greek Yogurt Parfait', 280, 20, 30, 8, 'Greek yogurt • berries • granola'),
+  ('Salmon Salad', 460, 36, 18, 24, 'Salmon • greens • olive oil vinaigrette'),
+  ('Oatmeal With Banana', 350, 12, 58, 7, 'Rolled oats • banana • peanut butter'),
+  ('Egg White Scramble', 300, 28, 16, 12, 'Egg whites • spinach • feta'),
+  ('Beef Burrito Bowl', 610, 42, 62, 20, 'Lean beef • rice • beans • salsa'),
+  ('Protein Smoothie', 320, 32, 28, 8, 'Whey protein • milk • banana')
+on conflict (name) do nothing;
+
 create table if not exists workout_routines (
   id uuid primary key default gen_random_uuid(),
   user_id text not null,

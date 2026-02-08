@@ -15,10 +15,13 @@ import logo from "./assets/devfest-logo.svg"
 import {
   addMealEntry,
   createCustomFood,
+  deleteMealEntry,
+  listCommonMeals,
   listCustomFoods,
   listMealEntries,
   toDateKey,
   toggleFavoriteFood,
+  updateMealEntry,
 } from "./lib/foodRepo"
 import {
   addPostComment,
@@ -119,7 +122,9 @@ export default function App() {
   const [tab, setTab] = useState("home")
   const [sheetOpen, setSheetOpen] = useState(false)
   const [posts, setPosts] = useState([])
+  const [commonMeals, setCommonMeals] = useState(BASE_MEALS)
   const [customFoods, setCustomFoods] = useState([])
+  const [favoriteCommonMealIds, setFavoriteCommonMealIds] = useState([])
   const [mealEntries, setMealEntries] = useState([])
   const [selectedDate, setSelectedDate] = useState(() => new Date())
 
@@ -127,10 +132,34 @@ export default function App() {
   const isHomeTab = tab === "home"
   const mode = isWorkoutTab ? "workout" : "food"
   const currentUserId = sessionUser?.login || "anon"
+  const favoriteCommonMealsStorageKey = `favorite_common_meals_${currentUserId}`
   const selectedDateKey = useMemo(() => toDateKey(selectedDate), [selectedDate])
 
-  const meals = useMemo(() => [...BASE_MEALS, ...mealEntries], [mealEntries])
-  const allMealOptions = useMemo(() => [...BASE_MEALS, ...customFoods], [customFoods])
+  const meals = useMemo(() => [...mealEntries], [mealEntries])
+  const allMealOptions = useMemo(() => [...commonMeals, ...customFoods], [commonMeals, customFoods])
+  const favoriteMeals = useMemo(() => {
+    const favoriteCustomFoods = customFoods.filter((food) => food.favorite)
+    const favoriteCommonMeals = commonMeals.filter((meal) => favoriteCommonMealIds.includes(meal.id))
+    return [...favoriteCommonMeals, ...favoriteCustomFoods]
+  }, [commonMeals, customFoods, favoriteCommonMealIds])
+
+  const syncCommonMeals = useCallback(async () => {
+    if (!isSupabaseConfigured) {
+      setCommonMeals(BASE_MEALS)
+      return
+    }
+    const { data, error } = await listCommonMeals()
+    if (error) {
+      console.error("Failed to load common meals", error)
+      setCommonMeals(BASE_MEALS)
+      return
+    }
+    if (!Array.isArray(data) || data.length === 0) {
+      setCommonMeals(BASE_MEALS)
+      return
+    }
+    setCommonMeals(data)
+  }, [])
 
   const syncCustomFoods = useCallback(async () => {
     if (!isAuthenticated || !isSupabaseConfigured) return
@@ -161,6 +190,37 @@ export default function App() {
     }
     setPosts(data || [])
   }, [isAuthenticated, currentUserId])
+
+  useEffect(() => {
+    syncCommonMeals()
+  }, [syncCommonMeals])
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    try {
+      const raw = window.localStorage.getItem(favoriteCommonMealsStorageKey)
+      if (!raw) {
+        setFavoriteCommonMealIds([])
+        return
+      }
+      const parsed = JSON.parse(raw)
+      if (!Array.isArray(parsed)) {
+        setFavoriteCommonMealIds([])
+        return
+      }
+      setFavoriteCommonMealIds(parsed)
+    } catch {
+      setFavoriteCommonMealIds([])
+    }
+  }, [favoriteCommonMealsStorageKey])
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    window.localStorage.setItem(
+      favoriteCommonMealsStorageKey,
+      JSON.stringify(favoriteCommonMealIds)
+    )
+  }, [favoriteCommonMealIds, favoriteCommonMealsStorageKey])
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -249,6 +309,40 @@ export default function App() {
     })
   }
 
+  const handleEditMealInIntake = async (id, meal) => {
+    if (!id || !meal) return
+    const nextMeal = toLocalMeal({ ...meal, id })
+    const isLocalOnlyId = `${id}`.startsWith("meal_")
+
+    if (!isSupabaseConfigured || isLocalOnlyId) {
+      setMealEntries((prev) => prev.map((entry) => (entry.id === id ? { ...entry, ...nextMeal } : entry)))
+      return
+    }
+
+    const { data, error } = await updateMealEntry({ userId: currentUserId, id, meal: nextMeal })
+    if (error || !data) {
+      console.error("Failed to update meal entry in Supabase", error)
+      setMealEntries((prev) => prev.map((entry) => (entry.id === id ? { ...entry, ...nextMeal } : entry)))
+      return
+    }
+    setMealEntries((prev) => prev.map((entry) => (entry.id === id ? data : entry)))
+  }
+
+  const handleDeleteMealFromIntake = async (id) => {
+    if (!id) return
+    const isLocalOnlyId = `${id}`.startsWith("meal_")
+    const previous = mealEntries
+    setMealEntries((prev) => prev.filter((entry) => entry.id !== id))
+
+    if (!isSupabaseConfigured || isLocalOnlyId) return
+
+    const { error } = await deleteMealEntry({ userId: currentUserId, id })
+    if (error) {
+      console.error("Failed to delete meal entry in Supabase", error)
+      setMealEntries(previous)
+    }
+  }
+
   const handleToggleFavorite = async (id) => {
     const target = customFoods.find((food) => food.id === id)
     if (!target) return
@@ -271,6 +365,27 @@ export default function App() {
         prev.map((food) => (food.id === id ? { ...food, favorite: !nextFavorite } : food))
       )
     }
+  }
+
+  const isMealFavorite = (meal) => {
+    if (!meal?.id) return false
+    const customFood = customFoods.find((food) => food.id === meal.id)
+    if (customFood) return Boolean(customFood.favorite)
+    return favoriteCommonMealIds.includes(meal.id)
+  }
+
+  const handleToggleMealFavorite = async (meal) => {
+    if (!meal?.id) return
+
+    const customFood = customFoods.find((food) => food.id === meal.id)
+    if (customFood) {
+      await handleToggleFavorite(meal.id)
+      return
+    }
+
+    setFavoriteCommonMealIds((prev) =>
+      prev.includes(meal.id) ? prev.filter((id) => id !== meal.id) : [meal.id, ...prev]
+    )
   }
 
   const handleDateChange = (nextDate) => setSelectedDate(nextDate)
@@ -404,7 +519,13 @@ export default function App() {
                     onAddPostReply={handleAddPostReply}
                   />
                 )}
-                {tab === "food" && <FoodScreen meals={meals} />}
+                {tab === "food" && (
+                  <FoodScreen
+                    meals={meals}
+                    onEditMeal={handleEditMealInIntake}
+                    onDeleteMeal={handleDeleteMealFromIntake}
+                  />
+                )}
                 {tab === "workouts" && <WorkoutsScreen userId={currentUserId} />}
               </main>
 
@@ -478,8 +599,10 @@ export default function App() {
             mode={mode}
             onCreateFood={handleCreateFood}
             allMeals={allMealOptions}
+            favoriteMeals={favoriteMeals}
             customFoods={customFoods}
-            onToggleFavorite={handleToggleFavorite}
+            isMealFavorite={isMealFavorite}
+            onToggleMealFavorite={handleToggleMealFavorite}
             onAddMeal={handleAddMealFromMenu}
             onAddMealFromScan={handleAddMealFromScan}
           />

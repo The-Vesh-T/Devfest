@@ -32,35 +32,20 @@ body.wk-sheet-open .bottomNav{
   position: relative;
 }
 
-.notch{
-  position: absolute;
-  top: 12px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 160px;
-  height: 26px;
-  border-radius: 999px;
-  background: rgba(0,0,0,0.35);
-  border: 1px solid rgba(255,255,255,0.06);
-  z-index: 6;
-}
-
-
 .app { height: 100%; display: flex; flex-direction: column; }
 
 /* Topbar */
 .topbar{
   position: relative;
-  padding: 30px 16px 10px;  /* more space under notch */
-  height: 76px;
+  padding: 14px 16px 10px;
+  height: 56px;
 }
 
 
 .appTitle{
   position: absolute;
-  left: 50%;
-  top: 40px;
-  transform: translateX(-50%);
+  left: 16px;
+  top: 14px;
   font-weight: 950;
   letter-spacing: 0.2px;
   font-size: 16px;
@@ -73,8 +58,8 @@ body.wk-sheet-open .bottomNav{
 }
 
 .brandLogo {
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
   object-fit: contain;
 }
 /* Content area */
@@ -87,6 +72,11 @@ body.wk-sheet-open .bottomNav{
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
+}
+
+.content.homeContent,
+.content.workoutsContent {
+  padding-top: 0;
 }
 
 .content.loginContent {
@@ -224,11 +214,11 @@ body.wk-sheet-open .bottomNav{
   background: rgba(255,255,255,0.04);
   color: rgba(255,255,255,0.65);
   border-radius: 18px;
-  padding: 10px 0;
+  padding: 12px 0;
   cursor: pointer;
-  display: grid;
-  gap: 4px;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .navItem.active {
@@ -238,11 +228,10 @@ body.wk-sheet-open .bottomNav{
 }
 
 .navIcon { font-size: 18px; line-height: 1; }
-.navLabel { font-size: 12px; font-weight: 950; }
 
 .navIconSvg {
-  width: 20px;
-  height: 20px;
+  width: 26px;
+  height: 26px;
   color: #f2f2f2;
 }
 
@@ -376,8 +365,8 @@ body.wk-sheet-open .bottomNav{
   }
 
   .topbar{
-    padding-top: calc(26px + env(safe-area-inset-top));
-    height: calc(72px + env(safe-area-inset-top));
+    padding-top: 14px;
+    height: 56px;
   }
 
   .content {

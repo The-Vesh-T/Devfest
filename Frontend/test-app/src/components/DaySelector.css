@@ -3,10 +3,6 @@
   padding-bottom: 12px;
 }
 
-.topbar.withDay .appTitle {
-  top: 24px;
-}
-
 .dayHeader {
   position: relative;
   margin: 24px 16px 0;

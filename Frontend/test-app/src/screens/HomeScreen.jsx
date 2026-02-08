@@ -990,18 +990,6 @@ export default function HomeScreen({
                   />
                 </svg>
               </button>
-              <button className="focusBtn iconBtn" aria-label="Reply">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path
-                    d="M4 6h16a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H9l-5 4v-4H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    strokeLinejoin="round"
-                    strokeLinecap="round"
-                  />
-                </svg>
-              </button>
             </div>
 
             <div className="replyBox">

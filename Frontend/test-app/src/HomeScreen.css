@@ -3,14 +3,14 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin: 6px 2px 12px;
+  margin: 2px 2px 12px;
 }
 
 .homeTopBar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin: 4px 2px 8px;
+  margin: 0 2px 8px;
 }
 
 .topRight {

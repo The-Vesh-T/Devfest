@@ -1,7 +1,7 @@
 /* ===== Workouts (Hevy-ish, dark) ===== */
 .wkScreenBody{
   padding: 0;
-  margin: -14px 0 0;
+  margin: 0;
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -46,7 +46,7 @@
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  margin: 16px 0 10px 0;
+  margin: 12px 0 10px 0;
 }
 
 .wkScreenBody > .wkSection:first-of-type .wkSectionTop{

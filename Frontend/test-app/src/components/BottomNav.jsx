@@ -4,6 +4,7 @@ export default function BottomNav({ tab, setTab }) {
       <button
         className={`navItem ${tab === "home" ? "active" : ""}`}
         onClick={() => setTab("home")}
+        aria-label="Home"
       >
         <div className="navIcon navIconSvg" aria-hidden="true">
           <svg viewBox="0 0 24 24">
@@ -17,12 +18,12 @@ export default function BottomNav({ tab, setTab }) {
             />
           </svg>
         </div>
-        <div className="navLabel">Home</div>
       </button>
 
       <button
         className={`navItem ${tab === "food" ? "active" : ""}`}
         onClick={() => setTab("food")}
+        aria-label="Food"
       >
         <div className="navIcon navIconSvg" aria-hidden="true">
           <svg viewBox="0 0 24 24">
@@ -43,12 +44,12 @@ export default function BottomNav({ tab, setTab }) {
             />
           </svg>
         </div>
-        <div className="navLabel">Food</div>
       </button>
 
       <button
         className={`navItem ${tab === "workouts" ? "active" : ""}`}
         onClick={() => setTab("workouts")}
+        aria-label="Workouts"
       >
         <div className="navIcon navIconSvg" aria-hidden="true">
           <svg viewBox="0 0 24 24">
@@ -62,7 +63,6 @@ export default function BottomNav({ tab, setTab }) {
             />
           </svg>
         </div>
-        <div className="navLabel">Workouts</div>
       </button>
     </nav>
   );

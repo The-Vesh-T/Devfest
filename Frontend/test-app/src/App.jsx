@@ -363,13 +363,15 @@ export default function App() {
         <div className="app">
           {isAuthenticated ? (
             <>
-              <TopBar title="Valetudo" withDay={tab === "food"}>
-                {tab === "food" ? (
-                  <DaySelector selectedDate={selectedDate} onChangeDate={handleDateChange} />
-                ) : null}
+              <TopBar withDay={tab === "food"}>
+                {tab === "food" ? <DaySelector selectedDate={selectedDate} onChangeDate={handleDateChange} /> : null}
               </TopBar>
 
-              <main className={`content ${tab === "food" ? "foodContent" : ""}`}>
+              <main
+                className={`content ${
+                  tab === "food" ? "foodContent" : tab === "home" ? "homeContent" : "workoutsContent"
+                }`}
+              >
                 {tab === "home" && (
                   <HomeScreen
                     posts={posts}

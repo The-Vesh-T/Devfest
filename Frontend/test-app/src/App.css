@@ -65,6 +65,18 @@ body.wk-sheet-open .bottomNav{
   letter-spacing: 0.2px;
   font-size: 16px;
 }
+
+.brandTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.brandLogo {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
 /* Content area */
 .content {
   flex: 1;
@@ -97,6 +109,18 @@ body.wk-sheet-open .bottomNav{
   text-align: center;
   font-size: 22px;
   font-weight: 950;
+}
+
+.loginBrand {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+}
+
+.loginLogo {
+  width: 58px;
+  height: 58px;
+  object-fit: contain;
 }
 
 .loginSubtitle {

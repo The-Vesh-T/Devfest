@@ -53,6 +53,8 @@ const initialPosts = [
 ];
 
 export default function HomeScreen({ posts: externalPosts, onLogout }) {
+  const demoEmail = "demo@devfest.app";
+  const demoPassword = "DemoPass123!";
   const [homeRange, setHomeRange] = useState("weekly");
   const [profileRange, setProfileRange] = useState("weekly");
   const [personalRange, setPersonalRange] = useState("weekly");
@@ -95,6 +97,7 @@ export default function HomeScreen({ posts: externalPosts, onLogout }) {
     micro: false,
   });
   const [userQuery, setUserQuery] = useState("");
+  const [personalBio, setPersonalBio] = useState("Strength + mobility. Learning to love rest days.");
 
   const focusCard = (id) => setFocusedId((prev) => (prev === id ? null : id));
   const focusPost = (id) => setPostFocusedId((prev) => (prev === id ? null : id));
@@ -350,7 +353,7 @@ export default function HomeScreen({ posts: externalPosts, onLogout }) {
   const personalProfile = {
     name: "Aisha Patel",
     handle: "@aisha",
-    bio: "Strength + mobility. Learning to love rest days.",
+    bio: personalBio,
     followers: 412,
     following: 198,
     streak: 12,
@@ -493,13 +496,15 @@ export default function HomeScreen({ posts: externalPosts, onLogout }) {
                     className="input"
                     type="email"
                     autoComplete="off"
-                    placeholder="Email"
+                    value={demoEmail}
+                    readOnly
                   />
                   <input
                     className="input"
                     type="password"
                     autoComplete="off"
-                    placeholder="Password"
+                    value={demoPassword}
+                    readOnly
                   />
                   <button
                     className="primaryBtn"
@@ -626,9 +631,21 @@ export default function HomeScreen({ posts: externalPosts, onLogout }) {
               <div>
                 <div className="profileTitle">{personalProfile.name}</div>
                 <div className="profileHandle">{personalProfile.handle}</div>
+                <div className="profileEmail">{demoEmail}</div>
               </div>
             </div>
             <div className="profileBio">{personalProfile.bio}</div>
+            <div className="profileSection">
+              <div className="profileSectionTitle">Edit bio</div>
+              <textarea
+                className="input profileBioInput"
+                value={personalBio}
+                onChange={(e) => setPersonalBio(e.target.value)}
+                rows={3}
+                maxLength={180}
+                placeholder="Tell people about your fitness goals"
+              />
+            </div>
             <div className="profileStats">
               <div className="profileStat">
                 <div className="statNum">{personalProfile.followers}</div>

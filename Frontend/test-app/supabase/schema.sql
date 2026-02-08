@@ -55,7 +55,31 @@ values
   ('Oatmeal With Banana', 350, 12, 58, 7, 'Rolled oats • banana • peanut butter'),
   ('Egg White Scramble', 300, 28, 16, 12, 'Egg whites • spinach • feta'),
   ('Beef Burrito Bowl', 610, 42, 62, 20, 'Lean beef • rice • beans • salsa'),
-  ('Protein Smoothie', 320, 32, 28, 8, 'Whey protein • milk • banana')
+  ('Protein Smoothie', 320, 32, 28, 8, 'Whey protein • milk • banana'),
+  ('Tuna Wrap', 390, 33, 34, 12, 'Tuna • whole wheat wrap • lettuce'),
+  ('Avocado Toast And Eggs', 410, 19, 34, 22, 'Sourdough • avocado • 2 eggs'),
+  ('Shrimp Stir Fry', 470, 39, 44, 14, 'Shrimp • veggies • rice'),
+  ('Grilled Chicken Caesar', 440, 41, 16, 24, 'Chicken • romaine • parmesan'),
+  ('Tofu Veggie Bowl', 420, 24, 48, 14, 'Tofu • quinoa • roasted veggies'),
+  ('Pasta With Meat Sauce', 640, 35, 72, 22, 'Penne • lean beef • tomato sauce'),
+  ('Cottage Cheese Bowl', 260, 28, 18, 8, 'Cottage cheese • berries • chia'),
+  ('Peanut Butter Toast', 300, 11, 31, 15, 'Whole grain toast • peanut butter'),
+  ('Chicken Quesadilla', 560, 36, 42, 28, 'Chicken • tortilla • cheese'),
+  ('Veggie Omelet', 290, 25, 10, 16, 'Eggs • peppers • mushrooms • onion'),
+  ('Steak And Potatoes', 690, 48, 52, 30, 'Sirloin • roasted potatoes • greens'),
+  ('Overnight Oats', 360, 16, 49, 11, 'Oats • milk • berries'),
+  ('Poke Bowl', 520, 34, 56, 16, 'Ahi tuna • rice • edamame'),
+  ('Chicken Alfredo', 720, 42, 58, 34, 'Chicken • fettuccine • alfredo sauce'),
+  ('Lentil Soup And Bread', 410, 21, 58, 9, 'Lentil soup • whole grain bread'),
+  ('Breakfast Burrito', 540, 29, 46, 24, 'Eggs • beans • tortilla • salsa'),
+  ('Ground Turkey Bowl', 500, 38, 44, 18, 'Ground turkey • rice • veggies'),
+  ('Sushi Roll Set', 430, 21, 62, 10, '2 rolls • miso soup'),
+  ('Chickpea Salad', 370, 15, 42, 14, 'Chickpeas • cucumber • tomato'),
+  ('Chicken Noodle Soup', 310, 23, 28, 10, 'Chicken broth • noodles • veg'),
+  ('Yogurt Protein Bowl', 340, 29, 32, 10, 'Skyr • fruit • granola'),
+  ('Rice And Beans Plate', 480, 17, 74, 12, 'Rice • black beans • pico'),
+  ('Teriyaki Chicken Plate', 590, 37, 68, 18, 'Chicken • rice • teriyaki sauce'),
+  ('Turkey Chili', 450, 34, 38, 16, 'Ground turkey • beans • tomato')
 on conflict (name) do nothing;
 
 create table if not exists workout_routines (

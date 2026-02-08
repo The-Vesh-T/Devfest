@@ -12,7 +12,14 @@ import HomeScreen from "./screens/HomeScreen";
 import FoodScreen from "./screens/FoodScreen";
 import WorkoutsScreen from "./screens/WorkoutsScreen";
 
+const DEMO_EMAIL = "demo@devfest.app";
+const DEMO_PASSWORD = "DemoPass123!";
+
 export default function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(true);
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [loginError, setLoginError] = useState("");
   const [tab, setTab] = useState("home");
   const [sheetOpen, setSheetOpen] = useState(false);
   const [posts, setPosts] = useState([]);
@@ -64,50 +71,102 @@ export default function App() {
   };
 
   const handleDateChange = (nextDate) => setSelectedDate(nextDate);
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    setTab("home");
+    setSheetOpen(false);
+    setLoginError("");
+    setLoginEmail("");
+    setLoginPassword("");
+  };
+  const handleLoginSubmit = (e) => {
+    e.preventDefault();
+    const email = loginEmail.trim().toLowerCase();
+    const password = loginPassword.trim();
+    if (email === DEMO_EMAIL && password === DEMO_PASSWORD) {
+      setIsAuthenticated(true);
+      setLoginError("");
+      return;
+    }
+    setLoginError("Wrong email or password.");
+  };
 
   return (
     <div className="stage">
       <PhoneFrame>
         <div className="app">
-          <TopBar title="Valetudo" withDay={tab === "food"}>
-            {tab === "food" ? <DaySelector selectedDate={selectedDate} onChangeDate={handleDateChange} /> : null}
-          </TopBar>
+          {isAuthenticated ? (
+            <>
+              <TopBar title="Valetudo" withDay={tab === "food"}>
+                {tab === "food" ? <DaySelector selectedDate={selectedDate} onChangeDate={handleDateChange} /> : null}
+              </TopBar>
 
-          <main className={`content ${tab === "food" ? "foodContent" : ""}`}>
-            {tab === "home" && <HomeScreen posts={posts} />}
-            {tab === "food" && <FoodScreen meals={meals} />}
-            {tab === "workouts" && <WorkoutsScreen />}
-          </main>
+              <main className={`content ${tab === "food" ? "foodContent" : ""}`}>
+                {tab === "home" && <HomeScreen posts={posts} onLogout={handleLogout} />}
+                {tab === "food" && <FoodScreen meals={meals} />}
+                {tab === "workouts" && <WorkoutsScreen />}
+              </main>
 
-          {isHomeTab ? (
-            <button className="fab" onClick={() => setSheetOpen(true)} aria-label="Create post">
-              <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">
-                <path
-                  d="M4 16.5V20h3.5L18 9.5 14.5 6 4 16.5zM19.5 8a1 1 0 0 0 0-1.4L17.4 4.5a1 1 0 0 0-1.4 0l-1.6 1.6 3.5 3.5 1.6-1.6z"
-                  fill="currentColor"
-                />
-              </svg>
-            </button>
+              {isHomeTab ? (
+                <button className="fab" onClick={() => setSheetOpen(true)} aria-label="Create post">
+                  <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">
+                    <path
+                      d="M4 16.5V20h3.5L18 9.5 14.5 6 4 16.5zM19.5 8a1 1 0 0 0 0-1.4L17.4 4.5a1 1 0 0 0-1.4 0l-1.6 1.6 3.5 3.5 1.6-1.6z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                </button>
+              ) : (
+                <button
+                  className={`fab ${mode === "food" ? "fabFood" : ""}`}
+                  onClick={() => {
+                    if (isWorkoutTab) {
+                      window.dispatchEvent(new Event("open-workout-actions"));
+                      return;
+                    }
+                    setSheetOpen(true);
+                  }}
+                  aria-label="Add"
+                >
+                  +
+                </button>
+              )}
+
+              <BottomNav tab={tab} setTab={setTab} />
+            </>
           ) : (
-            <button
-              className={`fab ${mode === "food" ? "fabFood" : ""}`}
-              onClick={() => {
-                if (isWorkoutTab) {
-                  window.dispatchEvent(new Event("open-workout-actions"));
-                  return;
-                }
-                setSheetOpen(true);
-              }}
-              aria-label="Add"
-            >
-              +
-            </button>
+            <main className="content loginContent">
+              <div className="loginCard">
+                <h1 className="loginTitle">Valetudo</h1>
+                <p className="loginSubtitle">Sign in to continue</p>
+                <form className="loginForm" onSubmit={handleLoginSubmit} autoComplete="off">
+                  <input
+                    className="input"
+                    type="email"
+                    autoComplete="off"
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
+                    placeholder="Email"
+                  />
+                  <input
+                    className="input"
+                    type="password"
+                    autoComplete="off"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    placeholder="Password"
+                  />
+                  {loginError ? <div className="loginError">{loginError}</div> : null}
+                  <button className="primaryBtn" type="submit">
+                    Log in
+                  </button>
+                </form>
+              </div>
+            </main>
           )}
-
-          <BottomNav tab={tab} setTab={setTab} />
         </div>
 
-        {isHomeTab ? (
+        {isAuthenticated && isHomeTab ? (
           <PostSheet
             open={sheetOpen}
             onClose={() => setSheetOpen(false)}
@@ -126,17 +185,17 @@ export default function App() {
               ]);
             }}
           />
-        ) : (
-        <FoodAddSheet
-          open={sheetOpen}
-          onClose={() => setSheetOpen(false)}
-          mode={mode}
-          onCreateFood={handleCreateFood}
-          customFoods={customFoods}
-          onToggleFavorite={handleToggleFavorite}
-          onAddMealFromScan={handleAddMealFromScan}
-        />
-        )}
+        ) : isAuthenticated ? (
+          <FoodAddSheet
+            open={sheetOpen}
+            onClose={() => setSheetOpen(false)}
+            mode={mode}
+            onCreateFood={handleCreateFood}
+            customFoods={customFoods}
+            onToggleFavorite={handleToggleFavorite}
+            onAddMealFromScan={handleAddMealFromScan}
+          />
+        ) : null}
       </PhoneFrame>
     </div>
   );

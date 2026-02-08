@@ -2,6 +2,21 @@ import { useEffect, useRef, useState } from "react";
 import { BrowserMultiFormatReader } from "@zxing/browser";
 import "./FoodAddSheet.css";
 
+function FavoriteStarIcon({ active }) {
+  return (
+    <svg className="starIcon" viewBox="-2 -2 28 28" aria-hidden="true">
+      <path
+        d="m12 2.2 2.95 5.98 6.6.96-4.77 4.65 1.13 6.57L12 17.25 6.09 20.36l1.13-6.57L2.45 9.14l6.6-.96L12 2.2Z"
+        fill={active ? "currentColor" : "none"}
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 export default function FoodAddSheet({
   open,
   onClose,
@@ -419,7 +434,7 @@ export default function FoodAddSheet({
                                 onClick={() => onToggleFavorite?.(food.id)}
                                 aria-label="Toggle favorite"
                               >
-                                {food.favorite ? "★" : "☆"}
+                                <FavoriteStarIcon active={food.favorite} />
                               </button>
                             </div>
                           ))
@@ -456,7 +471,7 @@ export default function FoodAddSheet({
                                     onClick={() => onToggleFavorite?.(food.id)}
                                     aria-label="Toggle favorite"
                                   >
-                                    {food.favorite ? "★" : "☆"}
+                                    <FavoriteStarIcon active={food.favorite} />
                                   </button>
                                 </div>
                               ))

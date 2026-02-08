@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import "./WorkoutsScreen.css";
 import { isSupabaseConfigured } from "../lib/supabase";
 import {
-  addWorkoutSession,
+  addWorkoutSessionWithSets,
   createWorkoutRoutine,
   deleteWorkoutRoutine,
+  listLastExerciseSets,
   listWorkoutRoutines,
 } from "../lib/workoutRepo";
 
@@ -66,6 +67,7 @@ const DISCOVER_WORKOUTS = [
 ];
 
 const ROUTINES_STORAGE_KEY = "workouts_routines_v1";
+const LAST_SETS_STORAGE_KEY = "workouts_last_sets_v1";
 
 function loadSavedRoutines() {
   if (typeof window === "undefined") return MOCK_ROUTINES;
@@ -82,6 +84,23 @@ function loadSavedRoutines() {
 function saveRoutines(routines) {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(ROUTINES_STORAGE_KEY, JSON.stringify(routines));
+}
+
+function loadLastSets() {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = window.localStorage.getItem(LAST_SETS_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveLastSets(lastSets) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(LAST_SETS_STORAGE_KEY, JSON.stringify(lastSets));
 }
 
 function normalizeTitle(title) {
@@ -430,7 +449,7 @@ function DiscoverWorkoutsSheet({ open, onClose, onToggle, routines }) {
 }
 
 // Active Workout Screen (like Hevy's live workout)
-function ActiveWorkoutScreen({ routine, onClose, onComplete }) {
+function ActiveWorkoutScreen({ routine, lastSets, onClose, onComplete }) {
   const [exercises, setExercises] = useState(() =>
     (routine.exercises || []).map((ex) => {
       if (typeof ex === "string") return makeExercise(ex);
@@ -567,7 +586,14 @@ function ActiveWorkoutScreen({ routine, onClose, onComplete }) {
             {exercises.map((ex) => (
               <div key={ex.id} className="wkWorkoutExercise">
               <div className="wkExerciseHeader">
-                <span className="wkExerciseName">{ex.name}</span>
+                <div className="wkExerciseTitle">
+                  <span className="wkExerciseName">{ex.name}</span>
+                  {lastSets?.[ex.name] ? (
+                    <span className="wkExerciseGhost">
+                      Last: {lastSets[ex.name].weight ?? "-"} kg × {lastSets[ex.name].reps ?? "-"}
+                    </span>
+                  ) : null}
+                </div>
                 <button className="wkRemoveBtn" onClick={() => removeExercise(ex.id)}>×</button>
               </div>
 
@@ -577,7 +603,11 @@ function ActiveWorkoutScreen({ routine, onClose, onComplete }) {
                     <div className="wkSetNum">{setIdx + 1}</div>
                     <input
                       className="wkSetInput"
-                      placeholder="kg"
+                      placeholder={
+                        lastSets?.[ex.name]?.weight != null && lastSets[ex.name].weight !== ""
+                          ? String(lastSets[ex.name].weight)
+                          : "kg"
+                      }
                       type="text"
                       inputMode="decimal"
                       pattern="[0-9]*[.]?[0-9]*"
@@ -591,7 +621,11 @@ function ActiveWorkoutScreen({ routine, onClose, onComplete }) {
                     />
                     <input
                       className="wkSetInput"
-                      placeholder="reps"
+                      placeholder={
+                        lastSets?.[ex.name]?.reps != null && lastSets[ex.name].reps !== ""
+                          ? String(lastSets[ex.name].reps)
+                          : "reps"
+                      }
                       type="text"
                       inputMode="numeric"
                       pattern="[0-9]*"
@@ -645,7 +679,24 @@ function ActiveWorkoutScreen({ routine, onClose, onComplete }) {
         <button
           className="wkCompleteBtn"
           disabled={!canComplete}
-          onClick={() => onComplete({ exerciseCount: exercises.length, setCount: totalSets })}
+          onClick={() =>
+            onComplete({
+              title: routine.title,
+              exerciseCount: exercises.length,
+              setCount: totalSets,
+              totalWeight: Math.round(totalWeight),
+              exercises: exercises.map((ex) => ex.name),
+              exerciseSets: exercises.map((ex) => ({
+                name: ex.name,
+                sets: ex.sets.map((set) => ({
+                  weight: set.weight,
+                  reps: set.reps,
+                  failure: set.failure,
+                  dropset: set.dropset,
+                })),
+              })),
+            })
+          }
         >
           ✓ Complete Workout
         </button>
@@ -706,7 +757,7 @@ function WorkoutActionsSheet({ open, onClose, onStartEmpty, onCreateRoutine, onD
   );
 }
 
-function WorkoutCompleteSheet({ open, summary, onDone }) {
+function WorkoutCompleteSheet({ open, summary, onDone, onPost }) {
   if (!open || !summary) return null;
 
   return (
@@ -718,7 +769,7 @@ function WorkoutCompleteSheet({ open, summary, onDone }) {
         <div className="wkDoneHint">Want to post this workout to your feed?</div>
         <button
           className="wkDoneBtn"
-          onClick={() => alert("Share this workout?")}
+          onClick={() => onPost?.()}
         >
           Post this to your friends?
         </button>
@@ -739,6 +790,7 @@ export default function WorkoutsScreen({ userId }) {
   const [activeWorkout, setActiveWorkout] = useState(null);
   const [completeSummary, setCompleteSummary] = useState(null);
   const [actionsOpen, setActionsOpen] = useState(false);
+  const [lastSets, setLastSets] = useState(loadLastSets);
   const anySheetOpen = createOpen || discoverOpen || routineDetailsOpen || actionsOpen;
 
   useEffect(() => {
@@ -913,24 +965,74 @@ export default function WorkoutsScreen({ userId }) {
     }
   }
 
+  useEffect(() => {
+    if (!activeWorkout) return;
+    const names = (activeWorkout.exercises || [])
+      .map((ex) => (typeof ex === "string" ? ex : ex?.name))
+      .filter(Boolean);
+    if (names.length === 0) {
+      setLastSets({});
+      return;
+    }
+
+    if (useRemote) {
+      let active = true;
+      (async () => {
+        const { data, error } = await listLastExerciseSets({ userId, exerciseNames: names });
+        if (!active) return;
+        if (error) {
+          console.error("Failed to load last sets", error);
+          return;
+        }
+        setLastSets(data || {});
+      })();
+      return () => {
+        active = false;
+      };
+    }
+
+    const local = loadLastSets();
+    const filtered = {};
+    names.forEach((name) => {
+      if (local[name]) filtered[name] = local[name];
+    });
+    setLastSets(filtered);
+  }, [useRemote, activeWorkout, userId]);
+
   // Show active workout screen instead of routine list
   if (activeWorkout) {
     return (
       <ActiveWorkoutScreen
         routine={activeWorkout}
+        lastSets={lastSets}
         onClose={() => setActiveWorkout(null)}
         onComplete={async (summary) => {
           if (useRemote) {
-            const { error } = await addWorkoutSession({
+            const { error } = await addWorkoutSessionWithSets({
               userId,
               title: activeWorkout.title,
               exerciseCount: summary.exerciseCount,
               setCount: summary.setCount,
+              exercises: summary.exerciseSets,
             });
             if (error) {
               console.error("Failed to save workout session to Supabase", error);
             }
           }
+          const nextLast = { ...loadLastSets() };
+          (summary.exerciseSets || []).forEach((exercise) => {
+            const name = exercise?.name;
+            if (!name) return;
+            const sets = Array.isArray(exercise.sets) ? exercise.sets : [];
+            const last = sets[sets.length - 1];
+            if (!last) return;
+            nextLast[name] = {
+              weight: last.weight,
+              reps: last.reps,
+            };
+          });
+          saveLastSets(nextLast);
+          setLastSets(nextLast);
           setActiveWorkout(null);
           setCompleteSummary(summary);
         }}
@@ -988,6 +1090,12 @@ export default function WorkoutsScreen({ userId }) {
         open={Boolean(completeSummary)}
         summary={completeSummary}
         onDone={() => setCompleteSummary(null)}
+        onPost={() => {
+          if (typeof window !== "undefined" && completeSummary) {
+            window.dispatchEvent(new CustomEvent("workout-post", { detail: completeSummary }));
+          }
+          setCompleteSummary(null);
+        }}
       />
 
       <WorkoutActionsSheet

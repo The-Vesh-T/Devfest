@@ -1,5 +1,12 @@
 import { useEffect, useState } from "react";
 import "./WorkoutsScreen.css";
+import { isSupabaseConfigured } from "../lib/supabase";
+import {
+  addWorkoutSession,
+  createWorkoutRoutine,
+  deleteWorkoutRoutine,
+  listWorkoutRoutines,
+} from "../lib/workoutRepo";
 
 const MOCK_ROUTINES = [
   { id: "r1", title: "Lower Body", meta: "5 exercises • ~45 min", description: "Quads, hamstrings, glutes", exercises: ["Squats", "Leg Press", "Leg Curl", "Lunges", "Calf Raises"] },
@@ -721,7 +728,8 @@ function WorkoutCompleteSheet({ open, summary, onDone }) {
   );
 }
 
-export default function WorkoutsScreen() {
+export default function WorkoutsScreen({ userId }) {
+  const useRemote = Boolean(isSupabaseConfigured && userId);
   // This local state makes the screen feel real immediately.
   const [routines, setRoutines] = useState(loadSavedRoutines);
   const [createOpen, setCreateOpen] = useState(false);
@@ -740,6 +748,29 @@ export default function WorkoutsScreen() {
   }, []);
 
   useEffect(() => {
+    if (!useRemote) return;
+    let active = true;
+
+    (async () => {
+      const { data, error } = await listWorkoutRoutines({ userId });
+      if (!active) return;
+      if (error) {
+        console.error("Failed to load workout routines from Supabase", error);
+        return;
+      }
+      if (Array.isArray(data) && data.length > 0) {
+        setRoutines(data);
+        return;
+      }
+      setRoutines(MOCK_ROUTINES);
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [useRemote, userId]);
+
+  useEffect(() => {
     if (typeof document === "undefined") return undefined;
     document.body.classList.toggle("wk-sheet-open", anySheetOpen);
     return () => document.body.classList.remove("wk-sheet-open");
@@ -748,17 +779,38 @@ export default function WorkoutsScreen() {
   function updateRoutines(updater) {
     setRoutines((prev) => {
       const next = typeof updater === "function" ? updater(prev) : updater;
-      saveRoutines(next);
+      if (!useRemote) saveRoutines(next);
       return next;
     });
   }
 
-  function handleCreate(title, exercises = []) {
+  async function handleCreate(title, exercises = []) {
     const normalizedTitle = normalizeTitle(title);
     const duplicate = routines.find((r) => normalizeTitle(r.title) === normalizedTitle);
     if (duplicate) {
       setSelectedRoutine(duplicate);
       setRoutineDetailsOpen(true);
+      return;
+    }
+
+    const newRoutine = {
+      id: `r_${Date.now()}`,
+      title,
+      meta: `${(exercises.length || 0)} exercises • ~0 min`,
+      description: "Custom routine",
+      exercises: exercises.length ? exercises : [],
+    };
+
+    if (useRemote) {
+      const { data, error } = await createWorkoutRoutine({
+        userId,
+        routine: newRoutine,
+      });
+      if (error) {
+        console.error("Failed to create routine in Supabase", error);
+      }
+      updateRoutines((prev) => [data || newRoutine, ...prev]);
+      setCreateOpen(false);
       return;
     }
 
@@ -788,7 +840,7 @@ export default function WorkoutsScreen() {
     setRoutineDetailsOpen(false);
   }
 
-  function handleAddFromDiscover(workout) {
+  async function handleAddFromDiscover(workout) {
     const duplicate = routines.find((r) => normalizeTitle(r.title) === normalizeTitle(workout.title));
     if (duplicate) {
       setSelectedRoutine(duplicate);
@@ -796,10 +848,30 @@ export default function WorkoutsScreen() {
       return;
     }
 
+    const routineToAdd = {
+      id: `r_${Date.now()}`,
+      title: workout.title,
+      meta: `${workout.exercises} exercises • ${workout.duration}`,
+      description: workout.difficulty,
+      exercises: workout.exampleMoves || Array(workout.exercises).fill(null).map((_, i) => `Exercise ${i + 1}`),
+    };
+
+    if (useRemote) {
+      const { data, error } = await createWorkoutRoutine({
+        userId,
+        routine: routineToAdd,
+      });
+      if (error) {
+        console.error("Failed to save discover workout to Supabase", error);
+      }
+      updateRoutines((prev) => [data || routineToAdd, ...prev]);
+      return;
+    }
+
     updateRoutines((prev) => [
-      { 
-        id: `r_${Date.now()}`, 
-        title: workout.title, 
+      {
+        id: `r_${Date.now()}`,
+        title: workout.title,
         meta: `${workout.exercises} exercises • ${workout.duration}`,
         description: workout.difficulty,
         exercises: workout.exampleMoves || Array(workout.exercises).fill(null).map((_, i) => `Exercise ${i + 1}`)
@@ -808,19 +880,31 @@ export default function WorkoutsScreen() {
     ]);
   }
 
-  function handleToggleDiscoverWorkout(workout) {
+  async function handleToggleDiscoverWorkout(workout) {
     const normalizedWorkoutTitle = normalizeTitle(workout.title);
     const exists = routines.find((r) => normalizeTitle(r.title) === normalizedWorkoutTitle);
     if (exists) {
-      updateRoutines((prev) =>
-        prev.filter((r) => normalizeTitle(r.title) !== normalizedWorkoutTitle)
-      );
+      if (useRemote) {
+        const { error } = await deleteWorkoutRoutine({ userId, routineId: exists.id });
+        if (error) {
+          console.error("Failed to remove discover workout from Supabase", error);
+          return;
+        }
+      }
+      updateRoutines((prev) => prev.filter((r) => normalizeTitle(r.title) !== normalizedWorkoutTitle));
       return;
     }
-    handleAddFromDiscover(workout);
+    await handleAddFromDiscover(workout);
   }
 
-  function handleRemoveRoutine(routineId) {
+  async function handleRemoveRoutine(routineId) {
+    if (useRemote) {
+      const { error } = await deleteWorkoutRoutine({ userId, routineId });
+      if (error) {
+        console.error("Failed to remove routine from Supabase", error);
+        return;
+      }
+    }
     updateRoutines((prev) => prev.filter((r) => r.id !== routineId));
     if (selectedRoutine?.id === routineId) {
       setRoutineDetailsOpen(false);
@@ -834,7 +918,18 @@ export default function WorkoutsScreen() {
       <ActiveWorkoutScreen
         routine={activeWorkout}
         onClose={() => setActiveWorkout(null)}
-        onComplete={(summary) => {
+        onComplete={async (summary) => {
+          if (useRemote) {
+            const { error } = await addWorkoutSession({
+              userId,
+              title: activeWorkout.title,
+              exerciseCount: summary.exerciseCount,
+              setCount: summary.setCount,
+            });
+            if (error) {
+              console.error("Failed to save workout session to Supabase", error);
+            }
+          }
           setActiveWorkout(null);
           setCompleteSummary(summary);
         }}

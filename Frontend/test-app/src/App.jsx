@@ -161,6 +161,21 @@ export default function App() {
     setPosts(data || [])
   }, [isAuthenticated, currentUserId])
 
+  const buildWorkoutPostBody = (summary) => {
+    if (!summary) return ""
+    const lines = []
+    const exerciseCount = Number.isFinite(Number(summary.exerciseCount)) ? Number(summary.exerciseCount) : 0
+    const setCount = Number.isFinite(Number(summary.setCount)) ? Number(summary.setCount) : 0
+    lines.push(`Completed ${exerciseCount} exercises and ${setCount} sets.`)
+    if (Number.isFinite(Number(summary.totalWeight))) {
+      lines.push(`Total weight: ${Number(summary.totalWeight)} kg`)
+    }
+    if (Array.isArray(summary.exercises) && summary.exercises.length > 0) {
+      lines.push(`Exercises: ${summary.exercises.join(", ")}`)
+    }
+    return lines.join("\n")
+  }
+
   useEffect(() => {
     if (!isAuthenticated) {
       setCustomFoods([])
@@ -279,6 +294,21 @@ export default function App() {
 
     setPosts((prev) => [data, ...prev])
   }
+
+  useEffect(() => {
+    const handler = (event) => {
+      const summary = event?.detail
+      if (!summary) return
+      const titleBase = `${summary.title ?? "Workout"}`
+      handleCreatePost({
+        title: `${titleBase} completed`,
+        body: buildWorkoutPostBody(summary),
+      })
+      setTab("home")
+    }
+    window.addEventListener("workout-post", handler)
+    return () => window.removeEventListener("workout-post", handler)
+  }, [handleCreatePost, buildWorkoutPostBody])
 
   const handleTogglePostLike = async (postId, liked) => {
     if (!postId) return

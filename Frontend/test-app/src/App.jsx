@@ -23,6 +23,7 @@ import {
   toggleFavoriteFood,
   updateMealEntry,
 } from "./lib/foodRepo"
+import { COMMON_MEAL_SEED } from "./lib/commonMealsSeed"
 import {
   addPostComment,
   createFeedPost,
@@ -52,26 +53,7 @@ const ACCOUNTS = [
   },
 ]
 
-const BASE_MEALS = [
-  {
-    id: 1,
-    name: "Lunch",
-    calories: 400,
-    protein: 32,
-    carbs: 45,
-    fat: 14,
-    detail: "Chicken bowl • rice • veggies",
-  },
-  {
-    id: 2,
-    name: "Snack",
-    calories: 220,
-    protein: 18,
-    carbs: 24,
-    fat: 6,
-    detail: "Greek yogurt • honey",
-  },
-]
+const BASE_MEALS = COMMON_MEAL_SEED
 
 const toSafeNumber = (value) => {
   const n = Number(value)

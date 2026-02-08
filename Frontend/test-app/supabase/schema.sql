@@ -33,6 +33,19 @@ create table if not exists meal_entries (
 
 create index if not exists meal_entries_user_date_idx on meal_entries (user_id, consumed_on desc, created_at desc);
 
+create table if not exists food_catalog (
+  barcode text primary key,
+  name text not null,
+  calories int not null default 0,
+  protein int not null default 0,
+  carbs int not null default 0,
+  fat int not null default 0,
+  detail text not null default '',
+  source text not null default 'openfoodfacts',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create table if not exists workout_routines (
   id uuid primary key default gen_random_uuid(),
   user_id text not null,

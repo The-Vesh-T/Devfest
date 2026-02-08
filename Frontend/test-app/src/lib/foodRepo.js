@@ -40,6 +40,17 @@ const normalizeMeal = (row) => ({
   detail: cleanText(row.detail),
 })
 
+const normalizeCatalogFood = (row) => ({
+  barcode: cleanText(row.barcode),
+  name: cleanText(row.name, "Scanned food"),
+  calories: toNumber(row.calories),
+  protein: toNumber(row.protein),
+  carbs: toNumber(row.carbs),
+  fat: toNumber(row.fat),
+  detail: cleanText(row.detail, "Scanned food"),
+  source: cleanText(row.source, "openfoodfacts"),
+})
+
 export const listCustomFoods = async (userId) => {
   if (!isSupabaseConfigured || !userId) return { data: [], error: null }
   const { data, error } = await supabase
@@ -110,4 +121,44 @@ export const addMealEntry = async ({ userId, dateKey, meal, source = "manual", b
 
   const { data, error } = await supabase.from("meal_entries").insert(payload).select("*").single()
   return { data: data ? normalizeMeal(data) : null, error }
+}
+
+export const getCatalogFoodByBarcode = async (barcode) => {
+  if (!isSupabaseConfigured) return { data: null, error: null }
+  const cleanBarcode = cleanText(barcode)
+  if (!cleanBarcode) return { data: null, error: null }
+
+  const { data, error } = await supabase
+    .from("food_catalog")
+    .select("*")
+    .eq("barcode", cleanBarcode)
+    .maybeSingle()
+
+  return { data: data ? normalizeCatalogFood(data) : null, error }
+}
+
+export const upsertCatalogFood = async ({ barcode, food, source = "openfoodfacts" }) => {
+  if (!isSupabaseConfigured || !food) return { data: null, error: null }
+  const cleanBarcode = cleanText(barcode)
+  if (!cleanBarcode) return { data: null, error: null }
+
+  const payload = {
+    barcode: cleanBarcode,
+    name: cleanText(food.name, "Scanned food"),
+    calories: toNumber(food.calories),
+    protein: toNumber(food.protein),
+    carbs: toNumber(food.carbs),
+    fat: toNumber(food.fat),
+    detail: cleanText(food.detail, "Scanned food"),
+    source: cleanText(source, "openfoodfacts"),
+    updated_at: new Date().toISOString(),
+  }
+
+  const { data, error } = await supabase
+    .from("food_catalog")
+    .upsert(payload, { onConflict: "barcode" })
+    .select("*")
+    .single()
+
+  return { data: data ? normalizeCatalogFood(data) : null, error }
 }

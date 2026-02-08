@@ -95,6 +95,7 @@ const toLocalMeal = (meal) => ({
   carbs: toSafeNumber(meal?.carbs),
   fat: toSafeNumber(meal?.fat),
   detail: `${meal?.detail ?? ""}`.trim(),
+  barcode: meal?.barcode ? `${meal.barcode}`.trim() : null,
 })
 
 const toLocalPost = ({ author, title, body }) => ({
@@ -215,6 +216,7 @@ export default function App() {
       dateKey: selectedDateKey,
       meal: localMeal,
       source: "barcode",
+      barcode: localMeal.barcode,
     })
     if (error || !data) {
       console.error("Failed to add scanned meal to Supabase", error)

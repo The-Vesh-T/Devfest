@@ -13,11 +13,30 @@ import FoodScreen from "./screens/FoodScreen";
 import WorkoutsScreen from "./screens/WorkoutsScreen";
 import logo from "./assets/devfest-logo.svg";
 
-const DEMO_EMAIL = "demo@devfest.app";
-const DEMO_PASSWORD = "DemoPass123!";
+const ACCOUNTS = [
+  {
+    login: "demo@devfest.app",
+    password: "DemoPass123!",
+    name: "Aisha Patel",
+    displayName: "Aisha",
+    handle: "@aisha",
+    email: "demo@devfest.app",
+    bio: "Strength + mobility. Learning to love rest days.",
+  },
+  {
+    login: "user",
+    password: "pass",
+    name: "Pork Sandwich",
+    displayName: "Pork",
+    handle: "@pork",
+    email: "user",
+    bio: "Pork-fueled lifts and sandwich-fueled recovery.",
+  },
+];
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [sessionUser, setSessionUser] = useState(ACCOUNTS[0]);
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [loginError, setLoginError] = useState("");
@@ -84,7 +103,12 @@ export default function App() {
     e.preventDefault();
     const email = loginEmail.trim().toLowerCase();
     const password = loginPassword.trim();
-    if (email === DEMO_EMAIL && password === DEMO_PASSWORD) {
+    const account = ACCOUNTS.find(
+      (candidate) =>
+        candidate.login.toLowerCase() === email && candidate.password === password
+    );
+    if (account) {
+      setSessionUser(account);
       setIsAuthenticated(true);
       setLoginError("");
       return;
@@ -103,7 +127,7 @@ export default function App() {
               </TopBar>
 
               <main className={`content ${tab === "food" ? "foodContent" : ""}`}>
-                {tab === "home" && <HomeScreen posts={posts} onLogout={handleLogout} />}
+                {tab === "home" && <HomeScreen posts={posts} onLogout={handleLogout} currentUser={sessionUser} />}
                 {tab === "food" && <FoodScreen meals={meals} />}
                 {tab === "workouts" && <WorkoutsScreen />}
               </main>
@@ -141,11 +165,11 @@ export default function App() {
                 <form className="loginForm" onSubmit={handleLoginSubmit} autoComplete="off">
                   <input
                     className="input"
-                    type="email"
+                    type="text"
                     autoComplete="off"
                     value={loginEmail}
                     onChange={(e) => setLoginEmail(e.target.value)}
-                    placeholder="Email"
+                    placeholder="Email or username"
                   />
                   <input
                     className="input"

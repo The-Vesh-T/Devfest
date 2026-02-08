@@ -361,7 +361,7 @@ function RoutineDetailsSheet({ routine, open, onClose, onAddToWorkout }) {
           <div style={{ width: "60px" }}></div>
         </div>
 
-        <div className="wkSheetBody">
+        <div className="wkSheetBody wkSheetBodyFlush">
           <div className="wkRoutineDetail">
             <div className="wkDetailMeta">{routine.meta}</div>
             {routine.description && <div className="wkDetailDesc">{routine.description}</div>}
@@ -376,13 +376,15 @@ function RoutineDetailsSheet({ routine, open, onClose, onAddToWorkout }) {
               ))}
             </div>
 
-            <button className="wkStartBtn" onClick={() => {
-              onAddToWorkout(routine);
-              onClose();
-            }}>
-              🚀 Start Workout
-            </button>
           </div>
+        </div>
+        <div className="wkSheetFooter">
+          <button className="wkStartBtn" onClick={() => {
+            onAddToWorkout(routine);
+            onClose();
+          }}>
+            🚀 Start Workout
+          </button>
         </div>
       </div>
     </div>

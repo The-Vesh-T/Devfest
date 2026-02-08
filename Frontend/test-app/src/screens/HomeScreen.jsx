@@ -52,7 +52,13 @@ const initialPosts = [
   },
 ];
 
-export default function HomeScreen({ posts: externalPosts, onLogout, currentUser }) {
+export default function HomeScreen({
+  posts: externalPosts,
+  onLogout,
+  currentUser,
+  onTogglePostLike,
+  onAddPostReply,
+}) {
   const activeUser = currentUser ?? {
     name: "Aisha Patel",
     displayName: "Aisha",
@@ -144,9 +150,11 @@ export default function HomeScreen({ posts: externalPosts, onLogout, currentUser
     }, 450);
   };
 
-  const togglePostLike = (id) => {
-    setPostLiked((prev) => ({ ...prev, [id]: !prev[id] }));
+  const togglePostLike = (id, currentLiked) => {
+    const nextLiked = !currentLiked;
+    setPostLiked((prev) => ({ ...prev, [id]: nextLiked }));
     triggerPostPulse("like", id);
+    onTogglePostLike?.(id, nextLiked);
   };
 
   const sendReply = (id) => {
@@ -169,6 +177,7 @@ export default function HomeScreen({ posts: externalPosts, onLogout, currentUser
     }));
     setPostReplyDrafts((prev) => ({ ...prev, [id]: "" }));
     setPostReplyId(null);
+    onAddPostReply?.(id, text);
   };
 
   const toggleReplyLike = (key) => {
@@ -198,7 +207,7 @@ export default function HomeScreen({ posts: externalPosts, onLogout, currentUser
 
   const mergedPosts =
     externalPosts && externalPosts.length > 0
-      ? [...externalPosts, ...initialPosts]
+      ? externalPosts
       : initialPosts;
   const sortedPosts = [...mergedPosts].sort((a, b) => {
     const aPinned = pinnedById[a.id] ?? a.pinned ?? false;
@@ -1095,9 +1104,20 @@ export default function HomeScreen({ posts: externalPosts, onLogout, currentUser
         {postFocusedId && <div className="feedBackdrop" onClick={clearPostFocus} />}
         {shownPosts.map((post) => {
           const isPinned = pinnedById[post.id] ?? post.pinned ?? false;
+          const baselineLiked = Boolean(post.likedByMe);
+          const localLiked = postLiked[post.id];
+          const effectiveLiked = localLiked ?? baselineLiked;
+          const likeDelta =
+            localLiked == null
+              ? 0
+              : effectiveLiked === baselineLiked
+              ? 0
+              : effectiveLiked
+              ? 1
+              : -1;
           const postLikeCount =
             (post.likes ?? 0) +
-            (postLiked[post.id] ? 1 : 0) +
+            likeDelta +
             (postRepliesById[post.id]?.reduce((acc, _, idx) => {
               const key = `post-${post.id}-${idx}`;
               const nested = replyRepliesByKey[key]?.length || 0;
@@ -1143,18 +1163,18 @@ export default function HomeScreen({ posts: externalPosts, onLogout, currentUser
               <div className="focusActions" onClick={(e) => e.stopPropagation()}>
                 <button
                   className={`focusBtn iconBtn ${postPulse.like === post.id ? "pulse" : ""} ${
-                    postLiked[post.id] ? "liked" : ""
+                    effectiveLiked ? "liked" : ""
                   }`}
                   aria-label="Like"
                   onClick={(e) => {
                     e.stopPropagation();
-                    togglePostLike(post.id);
+                    togglePostLike(post.id, effectiveLiked);
                   }}
                 >
                   <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path
                       d="M12 20s-7-4.35-7-9.2C5 7 6.9 5 9.3 5c1.6 0 2.7.9 2.7.9S13.1 5 14.7 5C17.1 5 19 7 19 10.8 19 15.65 12 20 12 20z"
-                      fill={postLiked[post.id] ? "currentColor" : "none"}
+                      fill={effectiveLiked ? "currentColor" : "none"}
                       stroke="currentColor"
                       strokeWidth="1.8"
                       strokeLinejoin="round"

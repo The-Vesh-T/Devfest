@@ -23,6 +23,7 @@ import {
 import {
   addPostComment,
   createFeedPost,
+  ensureSeedSocialData,
   listFeedPosts,
   setPostLike,
 } from "./lib/socialRepo"
@@ -30,6 +31,7 @@ import { isSupabaseConfigured } from "./lib/supabase"
 
 const ACCOUNTS = [
   {
+    userId: "demo",
     login: "demo@devfest.app",
     password: "DemoPass123!",
     name: "Aisha Patel",
@@ -39,6 +41,7 @@ const ACCOUNTS = [
     bio: "Strength + mobility. Learning to love rest days.",
   },
   {
+    userId: "user",
     login: "user",
     password: "pass",
     name: "Pork Sandwich",
@@ -137,7 +140,7 @@ export default function App() {
   const isWorkoutTab = tab === "workouts"
   const isHomeTab = tab === "home"
   const mode = isWorkoutTab ? "workout" : "food"
-  const currentUserId = sessionUser?.login || "anon"
+  const currentUserId = sessionUser?.userId || sessionUser?.login || "anon"
   const selectedDateKey = useMemo(() => toDateKey(selectedDate), [selectedDate])
 
   const meals = useMemo(() => [...BASE_MEALS, ...mealEntries], [mealEntries])
@@ -168,6 +171,23 @@ export default function App() {
     if (error) {
       console.error("Failed to load posts", error)
       return
+    }
+    if (!data || data.length === 0) {
+      const { error: seedError } = await ensureSeedSocialData()
+      if (seedError) {
+        console.error("Failed to seed social defaults", seedError)
+      } else {
+        const { data: seededData, error: seededLoadError } = await listFeedPosts({
+          userId: currentUserId,
+          limit: 100,
+        })
+        if (seededLoadError) {
+          console.error("Failed to load seeded posts", seededLoadError)
+          return
+        }
+        setPosts(seededData || [])
+        return
+      }
     }
     setPosts(data || [])
   }, [isAuthenticated, currentUserId])
@@ -423,8 +443,10 @@ export default function App() {
                     posts={posts}
                     onLogout={handleLogout}
                     currentUser={sessionUser}
+                    selectedDate={selectedDate}
                     onTogglePostLike={handleTogglePostLike}
                     onAddPostReply={handleAddPostReply}
+                    usePlaceholderPosts={!isSupabaseConfigured}
                   />
                 )}
                 {tab === "food" && <FoodScreen meals={meals} />}

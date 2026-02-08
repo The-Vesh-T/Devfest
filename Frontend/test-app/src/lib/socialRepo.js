@@ -32,7 +32,11 @@ export const listFeedPosts = async ({ userId, limit = 50 }) => {
 
   const [{ data: likes, error: likesError }, { data: comments, error: commentsError }] = await Promise.all([
     supabase.from("post_likes").select("post_id,user_id").in("post_id", postIds),
-    supabase.from("post_comments").select("post_id,id").in("post_id", postIds),
+    supabase
+      .from("post_comments")
+      .select("id,post_id,user_id,author,body,created_at")
+      .in("post_id", postIds)
+      .order("created_at", { ascending: true }),
   ])
 
   if (likesError) return { data: [], error: likesError }
@@ -46,18 +50,30 @@ export const listFeedPosts = async ({ userId, limit = 50 }) => {
   })
 
   const commentCountByPost = {}
+  const commentsByPost = {}
   ;(comments || []).forEach((row) => {
     commentCountByPost[row.post_id] = (commentCountByPost[row.post_id] || 0) + 1
+    if (!commentsByPost[row.post_id]) commentsByPost[row.post_id] = []
+    commentsByPost[row.post_id].push({
+      id: row.id,
+      userId: row.user_id,
+      author: cleanText(row.author, "User"),
+      body: cleanText(row.body),
+      createdAt: row.created_at,
+    })
   })
 
   const mapped = posts.map((row) => ({
     id: row.id,
+    userId: row.user_id,
     author: cleanText(row.author, "User"),
     time: formatRelativeTime(row.created_at),
+    createdAt: row.created_at,
     title: cleanText(row.title, "Post"),
     body: cleanText(row.body),
     likes: likeCountByPost[row.id] || 0,
     replies: commentCountByPost[row.id] || 0,
+    comments: commentsByPost[row.id] || [],
     likedByMe: Boolean(likedByMe[row.id]),
     pinned: false,
   }))
@@ -81,12 +97,15 @@ export const createFeedPost = async ({ userId, author, title, body }) => {
   return {
     data: {
       id: data.id,
+      userId: payload.user_id,
       author: payload.author,
       time: "now",
+      createdAt: data.created_at,
       title: payload.title,
       body: payload.body,
       likes: 0,
       replies: 0,
+      comments: [],
       likedByMe: false,
       pinned: false,
     },
@@ -127,4 +146,99 @@ export const addPostComment = async ({ userId, postId, author, body }) => {
 
   const { error } = await supabase.from("post_comments").insert(payload)
   return { error }
+}
+
+export const ensureSeedSocialData = async () => {
+  if (!isSupabaseConfigured) return { seeded: false, error: null }
+
+  const { count, error: countError } = await supabase
+    .from("posts")
+    .select("id", { count: "exact", head: true })
+
+  if (countError) return { seeded: false, error: countError }
+  if ((count || 0) > 0) return { seeded: false, error: null }
+
+  const now = Date.now()
+  const hoursAgo = (h) => new Date(now - h * 60 * 60 * 1000).toISOString()
+
+  const { data: createdPosts, error: postsError } = await supabase
+    .from("posts")
+    .insert([
+      {
+        user_id: "demo",
+        author: "Aisha",
+        title: "Leg day felt strong",
+        body: "Hit all sets and kept tempo tight. Feeling great.",
+        created_at: hoursAgo(2),
+      },
+      {
+        user_id: "marco",
+        author: "Marco",
+        title: "Meal prep win",
+        body: "Protein goal hit early today. Chicken bowls for the week.",
+        created_at: hoursAgo(4),
+      },
+      {
+        user_id: "priya",
+        author: "Priya",
+        title: "Small wins",
+        body: "Got my walk in and stretched. Consistency > intensity.",
+        created_at: hoursAgo(24),
+      },
+    ])
+    .select("id,user_id")
+
+  if (postsError || !createdPosts) return { seeded: false, error: postsError }
+
+  const postByUser = {}
+  createdPosts.forEach((p) => {
+    postByUser[p.user_id] = p.id
+  })
+
+  const comments = []
+  if (postByUser.marco) {
+    comments.push({
+      post_id: postByUser.marco,
+      user_id: "demo",
+      author: "Aisha",
+      body: "Let us gooo 🔥",
+      created_at: hoursAgo(1.5),
+    })
+  }
+  if (postByUser.demo) {
+    comments.push({
+      post_id: postByUser.demo,
+      user_id: "priya",
+      author: "Priya",
+      body: "Great consistency!",
+      created_at: hoursAgo(1.3),
+    })
+    comments.push({
+      post_id: postByUser.demo,
+      user_id: "marco",
+      author: "Marco",
+      body: "Nice work",
+      created_at: hoursAgo(1.1),
+    })
+  }
+  if (comments.length > 0) {
+    const { error: commentError } = await supabase.from("post_comments").insert(comments)
+    if (commentError) return { seeded: false, error: commentError }
+  }
+
+  const likes = []
+  if (postByUser.marco) likes.push({ post_id: postByUser.marco, user_id: "demo" })
+  if (postByUser.priya) likes.push({ post_id: postByUser.priya, user_id: "demo" })
+  if (postByUser.demo) {
+    likes.push({ post_id: postByUser.demo, user_id: "marco" })
+    likes.push({ post_id: postByUser.demo, user_id: "priya" })
+  }
+  if (likes.length > 0) {
+    const { error: likeError } = await supabase
+      .from("post_likes")
+      .upsert(likes, { onConflict: "post_id,user_id", ignoreDuplicates: true })
+    if (likeError) return { seeded: false, error: likeError }
+  }
+
+  return { seeded: true, error: null }
 }

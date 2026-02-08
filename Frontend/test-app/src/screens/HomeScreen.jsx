@@ -61,6 +61,7 @@ export default function HomeScreen({
   selectedDate,
   onTogglePostLike,
   onAddPostReply,
+  usePlaceholderPosts = true,
 }) {
   const activeUser = currentUser ?? {
     name: "Aisha Patel",
@@ -127,6 +128,13 @@ export default function HomeScreen({
     setPersonalBio(activeUser.bio);
   }, [activeUser.bio]);
 
+  useEffect(() => {
+    if (!usePlaceholderPosts) {
+      setPostRepliesById({});
+      setRepliesById({});
+    }
+  }, [externalPosts, usePlaceholderPosts]);
+
   const focusCard = (id) => setFocusedId((prev) => (prev === id ? null : id));
   const focusPost = (id) => setPostFocusedId((prev) => (prev === id ? null : id));
   const clearFocus = () => {
@@ -148,9 +156,13 @@ export default function HomeScreen({
     }, 450);
   };
 
-  const toggleLike = (id) => {
-    setLiked((prev) => ({ ...prev, [id]: !prev[id] }));
+  const toggleLike = (id, postId, currentLiked) => {
+    const nextLiked = !currentLiked;
+    setLiked((prev) => ({ ...prev, [id]: nextLiked }));
     triggerPulse("like", id);
+    if (postId) {
+      onTogglePostLike?.(postId, nextLiked);
+    }
   };
 
   const triggerPostPulse = (type, id) => {
@@ -167,7 +179,7 @@ export default function HomeScreen({
     onTogglePostLike?.(id, nextLiked);
   };
 
-  const sendReply = (id) => {
+  const sendReply = (id, postId) => {
     const text = (replyDrafts[id] || "").trim();
     if (!text) return;
     setRepliesById((prev) => ({
@@ -176,6 +188,9 @@ export default function HomeScreen({
     }));
     setReplyDrafts((prev) => ({ ...prev, [id]: "" }));
     setReplyId(null);
+    if (postId) {
+      onAddPostReply?.(postId, text);
+    }
   };
 
   const sendPostReply = (id) => {
@@ -215,10 +230,27 @@ export default function HomeScreen({
     setActivityReplyDrafts((prev) => ({ ...prev, [key]: "" }));
   };
 
-  const mergedPosts =
-    externalPosts && externalPosts.length > 0
+  const mergedPosts = usePlaceholderPosts
+    ? externalPosts && externalPosts.length > 0
       ? [...externalPosts, ...initialPosts]
-      : initialPosts;
+      : initialPosts
+    : externalPosts || [];
+  const feedFromPosts = mergedPosts
+    .filter((post) => post.author && post.author !== selfLabel)
+    .map((post) => ({
+      id: post.id,
+      postId: post.id,
+      name: post.author,
+      action: "Post",
+      text: post.body,
+      likes: post.likes ?? 0,
+      replies: post.replies ?? 0,
+      comments: post.comments || [],
+      likedByMe: Boolean(post.likedByMe),
+      time: post.time || "now",
+      pinned: false,
+    }));
+  const baseFriendsFeed = usePlaceholderPosts ? feed : feedFromPosts;
   const sortedPosts = [...mergedPosts].sort((a, b) => {
     const aPinned = pinnedById[a.id] ?? a.pinned ?? false;
     const bPinned = pinnedById[b.id] ?? b.pinned ?? false;
@@ -226,7 +258,7 @@ export default function HomeScreen({
     return aPinned ? -1 : 1;
   });
   const shownPosts = socialExpanded ? sortedPosts : sortedPosts.slice(0, 3);
-  const sortedFriends = [...feed].sort((a, b) => {
+  const sortedFriends = [...baseFriendsFeed].sort((a, b) => {
     const aPinned = friendPinnedById[a.id] ?? a.pinned ?? false;
     const bPinned = friendPinnedById[b.id] ?? b.pinned ?? false;
     if (aPinned === bPinned) return 0;
@@ -1118,6 +1150,17 @@ export default function HomeScreen({
       <div className="cardList">
         {postFocusedId && <div className="feedBackdrop" onClick={clearPostFocus} />}
         {shownPosts.map((post) => {
+          const persistedReplies = (post.comments || [])
+            .filter((comment) => comment?.body)
+            .map((comment) => ({
+              author: comment.author || post.author || "User",
+              text: comment.body,
+            }));
+          const localReplies = (postRepliesById[post.id] || []).map((text) => ({
+            author: selfLabel,
+            text,
+          }));
+          const combinedReplies = [...persistedReplies, ...localReplies];
           const isPinned = pinnedById[post.id] ?? post.pinned ?? false;
           const baselineLiked = Boolean(post.likedByMe);
           const localLiked = postLiked[post.id];
@@ -1140,7 +1183,7 @@ export default function HomeScreen({
             }, 0) || 0);
           const postReplyCount =
             (post.replies ?? 0) +
-            (postRepliesById[post.id]?.length || 0) +
+            localReplies.length +
             (postRepliesById[post.id]?.reduce((acc, _, idx) => {
               const key = `post-${post.id}-${idx}`;
               const nested = replyRepliesByKey[key]?.length || 0;
@@ -1233,15 +1276,17 @@ export default function HomeScreen({
                 </button>
               </div>
             )}
-            {postRepliesById[post.id]?.length > 0 && (
+            {combinedReplies.length > 0 && (
               <div className="replyList">
                 {(postExpandedReplies[post.id]
-                  ? postRepliesById[post.id]
-                  : postRepliesById[post.id].slice(0, 1)
-                ).map((text, idx) => (
+                  ? combinedReplies
+                  : combinedReplies.slice(0, 1)
+                ).map((reply, idx) => (
                   <div key={`${post.id}-reply-${idx}`} className="replyItem">
-                    <span className="replyAuthor">{selfLabel}</span>
-                    <span className="replyText">{text}</span>
+                    <span className="replyAuthor">
+                      {reply.author === "You" ? selfLabel : reply.author}
+                    </span>
+                    <span className="replyText">{reply.text}</span>
                     {(() => {
                       const replyKey = `post-${post.id}-${idx}`;
                       return (
@@ -1322,7 +1367,7 @@ export default function HomeScreen({
                     })()}
                   </div>
                 ))}
-                {postRepliesById[post.id].length > 1 && (
+                {combinedReplies.length > 1 && (
                   <button
                     className="replyToggle"
                     onClick={(e) => {
@@ -1354,6 +1399,29 @@ export default function HomeScreen({
       <div className="cardList">
         {focusedId && <div className="feedBackdrop" onClick={clearFocus} />}
         {shownFeed.map((p) => {
+          const postId = p.postId || null;
+          const persistedReplies = (p.comments || [])
+            .filter((comment) => comment?.body)
+            .map((comment) => ({
+              author: comment.author || p.name || "User",
+              text: comment.body,
+            }));
+          const localReplies = (repliesById[p.id] || []).map((text) => ({
+            author: selfLabel,
+            text,
+          }));
+          const combinedReplies = [...persistedReplies, ...localReplies];
+          const baselineLiked = Boolean(p.likedByMe);
+          const localLiked = liked[p.id];
+          const effectiveLiked = localLiked ?? baselineLiked;
+          const likeDelta =
+            localLiked == null
+              ? 0
+              : effectiveLiked === baselineLiked
+              ? 0
+              : effectiveLiked
+              ? 1
+              : -1;
           const isPinned = friendPinnedById[p.id] ?? p.pinned ?? false;
           return (
           <div
@@ -1385,7 +1453,7 @@ export default function HomeScreen({
               <div className="feedStats">
                 <span>
                   {(p.likes ?? 0) +
-                    (liked[p.id] ? 1 : 0) +
+                    likeDelta +
                     (repliesById[p.id]?.reduce((acc, _, idx) => {
                       const key = `feed-${p.id}-${idx}`;
                       const nested = replyRepliesByKey[key]?.length || 0;
@@ -1395,7 +1463,7 @@ export default function HomeScreen({
                 </span>
                 <span>
                   {(p.replies ?? 0) +
-                    (repliesById[p.id]?.length || 0) +
+                    localReplies.length +
                     (repliesById[p.id]?.reduce((acc, _, idx) => {
                       const key = `feed-${p.id}-${idx}`;
                       const nested = replyRepliesByKey[key]?.length || 0;
@@ -1409,18 +1477,18 @@ export default function HomeScreen({
                 <div className="focusActions" onClick={(e) => e.stopPropagation()}>
                   <button
                     className={`focusBtn iconBtn ${pulse.like === p.id ? "pulse" : ""} ${
-                      liked[p.id] ? "liked" : ""
+                      effectiveLiked ? "liked" : ""
                     }`}
                     aria-label="Like"
                     onClick={(e) => {
                       e.stopPropagation();
-                      toggleLike(p.id);
+                      toggleLike(p.id, postId, effectiveLiked);
                     }}
                   >
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                       <path
                         d="M12 20s-7-4.35-7-9.2C5 7 6.9 5 9.3 5c1.6 0 2.7.9 2.7.9S13.1 5 14.7 5C17.1 5 19 7 19 10.8 19 15.65 12 20 12 20z"
-                        fill={liked[p.id] ? "currentColor" : "none"}
+                        fill={effectiveLiked ? "currentColor" : "none"}
                         stroke="currentColor"
                         strokeWidth="1.8"
                         strokeLinejoin="round"
@@ -1459,20 +1527,22 @@ export default function HomeScreen({
                       setReplyDrafts((prev) => ({ ...prev, [p.id]: e.target.value }))
                     }
                   />
-                  <button className="replySend" onClick={() => sendReply(p.id)}>
+                  <button className="replySend" onClick={() => sendReply(p.id, postId)}>
                     Send
                   </button>
                 </div>
               )}
-              {repliesById[p.id]?.length > 0 && (
+              {combinedReplies.length > 0 && (
                 <div className="replyList">
                 {(expandedReplies[p.id]
-                  ? repliesById[p.id]
-                  : repliesById[p.id].slice(0, 1)
-                ).map((text, idx) => (
+                  ? combinedReplies
+                  : combinedReplies.slice(0, 1)
+                ).map((reply, idx) => (
                   <div key={`${p.id}-reply-${idx}`} className="replyItem">
-                    <span className="replyAuthor">{selfLabel}</span>
-                    <span className="replyText">{text}</span>
+                    <span className="replyAuthor">
+                      {reply.author === "You" ? selfLabel : reply.author}
+                    </span>
+                    <span className="replyText">{reply.text}</span>
                     {(() => {
                       const replyKey = `feed-${p.id}-${idx}`;
                       return (
@@ -1553,7 +1623,7 @@ export default function HomeScreen({
                     })()}
                   </div>
                 ))}
-                  {repliesById[p.id].length > 1 && (
+                  {combinedReplies.length > 1 && (
                     <button
                       className="replyToggle"
                       onClick={(e) => {

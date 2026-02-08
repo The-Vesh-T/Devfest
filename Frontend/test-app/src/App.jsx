@@ -142,7 +142,6 @@ export default function App() {
   const [favoriteCommonMealIds, setFavoriteCommonMealIds] = useState([])
   const [mealEntries, setMealEntries] = useState([])
   const [selectedDate, setSelectedDate] = useState(() => new Date())
-  const [isWorkoutActive, setIsWorkoutActive] = useState(false)
 
   const isWorkoutTab = tab === "workouts"
   const isHomeTab = tab === "home"
@@ -551,7 +550,6 @@ export default function App() {
   const handleLogout = () => {
     setIsAuthenticated(false)
     setTab("home")
-    setIsWorkoutActive(false)
     setSheetOpen(false)
     setLoginError("")
     setLoginEmail("")
@@ -609,10 +607,7 @@ export default function App() {
                   />
                 )}
                 {tab === "workouts" && (
-                  <WorkoutsScreen
-                    userId={currentUserId}
-                    onWorkoutActiveChange={setIsWorkoutActive}
-                  />
+                  <WorkoutsScreen userId={currentUserId} />
                 )}
               </main>
 
@@ -620,7 +615,7 @@ export default function App() {
                 <button className="fab" onClick={() => setSheetOpen(true)} aria-label="Create post">
                   <span className="fabPlus" aria-hidden="true">+</span>
                 </button>
-              ) : isWorkoutTab && isWorkoutActive ? null : (
+              ) : isWorkoutTab ? null : (
                 <button
                   className={`fab ${mode === "food" ? "fabFood" : ""}`}
                   onClick={() => {

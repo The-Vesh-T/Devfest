@@ -871,7 +871,7 @@ function WorkoutCompleteSheet({ open, summary, onDone, onPost }) {
   );
 }
 
-export default function WorkoutsScreen({ userId, onWorkoutActiveChange }) {
+export default function WorkoutsScreen({ userId }) {
   const useRemote = Boolean(isSupabaseConfigured && userId);
   // This local state makes the screen feel real immediately.
   const [routines, setRoutines] = useState(loadSavedRoutines);
@@ -884,11 +884,6 @@ export default function WorkoutsScreen({ userId, onWorkoutActiveChange }) {
   const [actionsOpen, setActionsOpen] = useState(false);
   const [lastSets, setLastSets] = useState(loadLastSets);
   const anySheetOpen = createOpen || discoverOpen || routineDetailsOpen || actionsOpen;
-  const workoutActive = Boolean(activeWorkout);
-
-  useEffect(() => {
-    onWorkoutActiveChange?.(workoutActive);
-  }, [onWorkoutActiveChange, workoutActive]);
 
   useEffect(() => {
     const handleOpenActions = () => setActionsOpen(true);

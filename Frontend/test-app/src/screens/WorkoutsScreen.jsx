@@ -361,7 +361,7 @@ function RoutineDetailsSheet({ routine, open, onClose, onAddToWorkout }) {
           <div style={{ width: "60px" }}></div>
         </div>
 
-        <div className="wkSheetBody wkSheetBodyFlush">
+        <div className="wkSheetBody">
           <div className="wkRoutineDetail">
             <div className="wkDetailMeta">{routine.meta}</div>
             {routine.description && <div className="wkDetailDesc">{routine.description}</div>}

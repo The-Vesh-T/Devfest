@@ -45,15 +45,15 @@ body {
 /* Topbar */
 .topbar{
   position: relative;
-  padding: 26px 16px 10px;  /* more space under notch */
-  height: 72px;
+  padding: 30px 16px 10px;  /* more space under notch */
+  height: 76px;
 }
 
 
 .appTitle{
   position: absolute;
   left: 50%;
-  top: 34px;
+  top: 40px;
   transform: translateX(-50%);
   font-weight: 950;
   letter-spacing: 0.2px;

@@ -271,6 +271,30 @@ export default function HomeScreen({
       ? [...externalPosts, ...initialPosts]
       : initialPosts
     : externalPosts || [];
+  const getAuthorToken = (value) => `${value || ""}`.trim().split(/\s+/)[0].toLowerCase();
+  const getUserTokens = (user) => {
+    const tokens = new Set();
+    const nameToken = getAuthorToken(user?.name);
+    if (nameToken) tokens.add(nameToken);
+    const handleToken = `${user?.handle || ""}`.replace(/^@/, "").trim().toLowerCase();
+    if (handleToken) tokens.add(handleToken);
+    return tokens;
+  };
+  const getProfileActivityFromPosts = (user) => {
+    const tokens = getUserTokens(user);
+    return mergedPosts
+      .filter((post) => tokens.has(getAuthorToken(post?.author)))
+      .map((post) => ({
+        postId: post.id,
+        type: "post",
+        title: post.title,
+        body: post.body,
+        time: post.time || "now",
+        likes: post.likes ?? 0,
+        replies: post.replies ?? 0,
+      }));
+  };
+  const getPostById = (id) => mergedPosts.find((post) => `${post.id}` === `${id}`) || null;
   const feedFromPosts = mergedPosts
     .filter((post) => post.author && post.author !== selfLabel)
     .map((post) => ({
@@ -980,12 +1004,15 @@ export default function HomeScreen({
             <div className="profileSection">
               <div className="profileSectionTitle">Activity</div>
               <div className="activityFeed">
-                {profilePageUser.activity.map((a, i) => (
+                {(getProfileActivityFromPosts(profilePageUser).length > 0
+                  ? getProfileActivityFromPosts(profilePageUser)
+                  : profilePageUser.activity
+                ).map((a, i) => (
                   <button
                     key={`a-${i}`}
                     className="activityCard"
                     onClick={() => {
-                      const linkedPost = getActivityPost(profilePageUser, a);
+                      const linkedPost = a.postId ? getPostById(a.postId) : getActivityPost(profilePageUser, a);
                       setActivityOpen({
                         user: profilePageUser,
                         activity: a,
@@ -1046,6 +1073,25 @@ export default function HomeScreen({
             <div className="profileScreenSpacer" />
           </div>
           <div className="profileScreenBody">
+            {(() => {
+              const linkedPost = activityOpen.postId ? getPostById(activityOpen.postId) : null;
+              const baselineLiked = Boolean(linkedPost?.likedByMe);
+              const localLiked = activityLiked[activityOpen.key];
+              const effectiveLiked = localLiked ?? baselineLiked;
+              const persistedReplies = (linkedPost?.comments || [])
+                .filter((comment) => comment?.body)
+                .map((comment) => ({
+                  author: comment.author || activityOpen.user.name || "User",
+                  text: comment.body,
+                }));
+              const localReplies = (activityRepliesByKey[activityOpen.key] || []).map((text) => ({
+                author: selfLabel,
+                text,
+              }));
+              const shownReplies = linkedPost ? persistedReplies : [...persistedReplies, ...localReplies];
+
+              return (
+                <>
             <div className="activityCard detail">
               <div className="activityHeader">
                 {renderAvatar(activityOpen.user, "activityAvatar")}
@@ -1054,18 +1100,18 @@ export default function HomeScreen({
                   <div className="activityTime">{activityOpen.activity.time}</div>
                 </div>
               </div>
-              <div className="activityTitle">{activityOpen.activity.title}</div>
-              <div className="activityText">{activityOpen.activity.body}</div>
+              <div className="activityTitle">{linkedPost?.title || activityOpen.activity.title}</div>
+              <div className="activityText">{linkedPost?.body || activityOpen.activity.body}</div>
               {activityOpen.activity.type === "meal" && (
                 <div className="activityImage">Meal prep photo</div>
               )}
               <div className="postStats">
                 <span>
-                  {(activityOpen.activity.likes ?? 0) + (activityLiked[activityOpen.key] ? 1 : 0)} likes
+                  {(linkedPost?.likes ?? activityOpen.activity.likes ?? 0) + (effectiveLiked ? 1 : 0)} likes
                 </span>
                 <span>
-                  {(activityOpen.activity.replies ?? 0) +
-                    (activityRepliesByKey[activityOpen.key]?.length || 0)}{" "}
+                  {(linkedPost?.replies ?? activityOpen.activity.replies ?? 0) +
+                    (linkedPost ? 0 : activityRepliesByKey[activityOpen.key]?.length || 0)}{" "}
                   replies
                 </span>
               </div>
@@ -1073,10 +1119,10 @@ export default function HomeScreen({
 
             <div className="focusActions">
               <button
-                className={`focusBtn iconBtn ${activityLiked[activityOpen.key] ? "liked" : ""}`}
+                className={`focusBtn iconBtn ${effectiveLiked ? "liked" : ""}`}
                 aria-label="Like"
                 onClick={() => {
-                  const nextLiked = !activityLiked[activityOpen.key];
+                  const nextLiked = !effectiveLiked;
                   setActivityLiked((prev) => ({ ...prev, [activityOpen.key]: nextLiked }));
                   if (activityOpen.postId) {
                     onTogglePostLike?.(activityOpen.postId, nextLiked);
@@ -1086,7 +1132,7 @@ export default function HomeScreen({
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path
                     d="M12 20s-7-4.35-7-9.2C5 7 6.9 5 9.3 5c1.6 0 2.7.9 2.7.9S13.1 5 14.7 5C17.1 5 19 7 19 10.8 19 15.65 12 20 12 20z"
-                    fill={activityLiked[activityOpen.key] ? "currentColor" : "none"}
+                    fill={effectiveLiked ? "currentColor" : "none"}
                     stroke="currentColor"
                     strokeWidth="1.8"
                     strokeLinejoin="round"
@@ -1112,16 +1158,19 @@ export default function HomeScreen({
               </button>
             </div>
 
-            {activityRepliesByKey[activityOpen.key]?.length > 0 && (
+            {shownReplies.length > 0 && (
               <div className="replyList">
-                {activityRepliesByKey[activityOpen.key].map((text, idx) => (
+                {shownReplies.map((reply, idx) => (
                   <div key={`${activityOpen.key}-${idx}`} className="replyItem">
-                    <span className="replyAuthor">{selfLabel}</span>
-                    <span className="replyText">{text}</span>
+                    <span className="replyAuthor">{reply.author === "You" ? selfLabel : reply.author}</span>
+                    <span className="replyText">{reply.text}</span>
                   </div>
                 ))}
               </div>
             )}
+                </>
+              );
+            })()}
           </div>
         </div>
       )}

@@ -32,6 +32,16 @@ export default function FoodAddSheet({
   const videoRef = useRef(null);
   const streamRef = useRef(null);
 
+  const safeResetZxing = () => {
+    if (!zxingRef.current) return;
+    try {
+      zxingRef.current.reset();
+    } catch {
+      // Ignore scanner reset race conditions.
+    }
+    zxingRef.current = null;
+  };
+
   useEffect(() => {
     setShowCustomForm(false);
   }, [mealTab]);
@@ -43,8 +53,23 @@ export default function FoodAddSheet({
   }, [open]);
 
   const closeCamera = () => {
+    safeResetZxing();
+    if (videoRef.current) {
+      try {
+        videoRef.current.pause();
+      } catch {
+        // Ignore pause errors from detached media elements.
+      }
+      videoRef.current.srcObject = null;
+    }
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current.getTracks().forEach((track) => {
+        try {
+          track.stop();
+        } catch {
+          // Ignore track stop race conditions.
+        }
+      });
       streamRef.current = null;
     }
     scanLockRef.current = false;
@@ -68,14 +93,20 @@ export default function FoodAddSheet({
           audio: false,
         });
         if (cancelled) {
-          stream.getTracks().forEach((track) => track.stop());
+          stream.getTracks().forEach((track) => {
+            try {
+              track.stop();
+            } catch {
+              // Ignore track stop race conditions.
+            }
+          });
           return;
         }
         streamRef.current = stream;
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
         }
-      } catch (err) {
+      } catch {
         setCameraError("Camera permission denied or unavailable.");
       }
     };
@@ -85,7 +116,13 @@ export default function FoodAddSheet({
     return () => {
       cancelled = true;
       if (streamRef.current) {
-        streamRef.current.getTracks().forEach((track) => track.stop());
+        streamRef.current.getTracks().forEach((track) => {
+          try {
+            track.stop();
+          } catch {
+            // Ignore track stop race conditions.
+          }
+        });
         streamRef.current = null;
       }
     };
@@ -112,10 +149,7 @@ export default function FoodAddSheet({
       scanLockRef.current = true;
       setBarcodeResult(code);
       setScanLookup({ status: "loading", code });
-      if (zxingRef.current) {
-        zxingRef.current.reset();
-        zxingRef.current = null;
-      }
+      closeCamera();
     };
 
     const scanLoop = async () => {
@@ -169,15 +203,18 @@ export default function FoodAddSheet({
         scanLockRef.current = true;
         setBarcodeResult(code);
         setScanLookup({ status: "loading", code });
-        reader.reset();
-        zxingRef.current = null;
+        closeCamera();
       });
     } catch {
       setBarcodeError("Unable to start fallback scanner.");
     }
 
     return () => {
-      reader.reset();
+      try {
+        reader.reset();
+      } catch {
+        // Ignore scanner reset race conditions.
+      }
       zxingRef.current = null;
     };
   }, [cameraOpen, cameraMode]);
@@ -199,10 +236,15 @@ export default function FoodAddSheet({
         const p = data.product;
         const nutr = p.nutriments || {};
         const name = p.product_name || p.generic_name || "Scanned food";
-        const calories = Math.round(Number(nutr["energy-kcal_100g"] || nutr["energy-kcal_serving"] || 0));
-        const protein = Math.round(Number(nutr.proteins_100g || nutr.proteins_serving || 0));
-        const carbs = Math.round(Number(nutr.carbohydrates_100g || nutr.carbohydrates_serving || 0));
-        const fat = Math.round(Number(nutr.fat_100g || nutr.fat_serving || 0));
+        const toSafeMacro = (value) => {
+          const n = Number(value);
+          if (!Number.isFinite(n) || n < 0) return 0;
+          return Math.round(n);
+        };
+        const calories = toSafeMacro(nutr["energy-kcal_100g"] ?? nutr["energy-kcal_serving"] ?? 0);
+        const protein = toSafeMacro(nutr.proteins_100g ?? nutr.proteins_serving ?? 0);
+        const carbs = toSafeMacro(nutr.carbohydrates_100g ?? nutr.carbohydrates_serving ?? 0);
+        const fat = toSafeMacro(nutr.fat_100g ?? nutr.fat_serving ?? 0);
 
         onAddMealFromScan?.({
           name,
@@ -215,11 +257,9 @@ export default function FoodAddSheet({
 
         lastAddedCodeRef.current = scanLookup.code;
         setScanLookup({ status: "success", code: scanLookup.code, name });
-        closeCamera();
       } catch {
         if (!cancelled) {
           setScanLookup({ status: "error", code: scanLookup.code, message: "Lookup failed." });
-          closeCamera();
         }
       }
     };

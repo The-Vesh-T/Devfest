@@ -252,7 +252,6 @@ export default function App() {
       JSON.stringify(favoriteCommonMealIds)
     )
   }, [favoriteCommonMealIds, favoriteCommonMealsStorageKey])
-
   useEffect(() => {
     if (!isAuthenticated) {
       setCustomFoods([])

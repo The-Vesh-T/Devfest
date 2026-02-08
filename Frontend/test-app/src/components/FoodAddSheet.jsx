@@ -1,13 +1,33 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./FoodAddSheet.css";
 
-export default function FoodAddSheet({ open, onClose, mode, onCreateFood, customFoods, onToggleFavorite }) {
+export default function FoodAddSheet({
+  open,
+  onClose,
+  mode,
+  onCreateFood,
+  customFoods,
+  onToggleFavorite,
+  onAddMealFromScan,
+}) {
   const [foodView, setFoodView] = useState("root"); // root | add-meal
   const [mealTab, setMealTab] = useState("all"); // all | favorites | custom
   const [showCustomForm, setShowCustomForm] = useState(false);
   const [foodName, setFoodName] = useState("");
   const [servings, setServings] = useState("");
   const [caloriesPerServing, setCaloriesPerServing] = useState("");
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [cameraMode, setCameraMode] = useState("barcode"); // barcode | photo
+  const [cameraError, setCameraError] = useState("");
+  const [barcodeError, setBarcodeError] = useState("");
+  const [barcodeResult, setBarcodeResult] = useState("");
+  const [capturedImage, setCapturedImage] = useState("");
+  const [scanLookup, setScanLookup] = useState(null);
+  const scanLockRef = useRef(false);
+  const lastDetectedCodeRef = useRef("");
+  const lastAddedCodeRef = useRef("");
+  const videoRef = useRef(null);
+  const streamRef = useRef(null);
 
   useEffect(() => {
     setShowCustomForm(false);
@@ -19,9 +39,154 @@ export default function FoodAddSheet({ open, onClose, mode, onCreateFood, custom
     }
   }, [open]);
 
+  const closeCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+    scanLockRef.current = false;
+    setCameraOpen(false);
+  };
+
+  useEffect(() => {
+    if (!cameraOpen) return;
+
+    let cancelled = false;
+    setCameraError("");
+    setBarcodeError("");
+    lastDetectedCodeRef.current = "";
+    lastAddedCodeRef.current = "";
+
+    const startCamera = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "environment" },
+          audio: false,
+        });
+        if (cancelled) {
+          stream.getTracks().forEach((track) => track.stop());
+          return;
+        }
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      } catch (err) {
+        setCameraError("Camera permission denied or unavailable.");
+      }
+    };
+
+    startCamera();
+
+    return () => {
+      cancelled = true;
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
+      }
+    };
+  }, [cameraOpen]);
+
+  useEffect(() => {
+    if (!cameraOpen || cameraMode !== "barcode") return;
+    if (!("BarcodeDetector" in window)) {
+      setBarcodeError("Barcode scanning not supported in this browser.");
+      return;
+    }
+
+    let cancelled = false;
+    scanLockRef.current = false;
+    const detector = new window.BarcodeDetector({
+      formats: ["ean_13", "ean_8", "upc_a", "upc_e", "code_128", "code_39", "qr_code"],
+    });
+
+    const scanLoop = async () => {
+      if (cancelled || !videoRef.current || scanLockRef.current) return;
+      if (videoRef.current.readyState < 2) {
+        setTimeout(scanLoop, 500);
+        return;
+      }
+      try {
+        const codes = await detector.detect(videoRef.current);
+        if (codes && codes.length > 0) {
+          const code = codes[0].rawValue || "";
+          if (!code) return;
+          if (code === lastDetectedCodeRef.current) {
+            closeCamera();
+            return;
+          }
+          lastDetectedCodeRef.current = code;
+          scanLockRef.current = true;
+          setBarcodeResult(code);
+          setScanLookup({ status: "loading", code });
+          closeCamera();
+          return;
+        }
+      } catch {
+        setBarcodeError("Unable to scan barcode. Try more light or a clearer angle.");
+      }
+      setTimeout(scanLoop, 500);
+    };
+
+    scanLoop();
+
+    return () => {
+      cancelled = true;
+      scanLockRef.current = false;
+    };
+  }, [cameraOpen, cameraMode]);
+
+  useEffect(() => {
+    if (!scanLookup || !scanLookup.code) return;
+    if (lastAddedCodeRef.current === scanLookup.code) return;
+    let cancelled = false;
+
+    const fetchFood = async () => {
+      try {
+        const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${scanLookup.code}.json`);
+        const data = await res.json();
+        if (cancelled) return;
+        if (data.status !== 1 || !data.product) {
+          setScanLookup({ status: "error", code: scanLookup.code, message: "No product found." });
+          return;
+        }
+        const p = data.product;
+        const nutr = p.nutriments || {};
+        const name = p.product_name || p.generic_name || "Scanned food";
+        const calories = Math.round(Number(nutr["energy-kcal_100g"] || nutr["energy-kcal_serving"] || 0));
+        const protein = Math.round(Number(nutr.proteins_100g || nutr.proteins_serving || 0));
+        const carbs = Math.round(Number(nutr.carbohydrates_100g || nutr.carbohydrates_serving || 0));
+        const fat = Math.round(Number(nutr.fat_100g || nutr.fat_serving || 0));
+
+        onAddMealFromScan?.({
+          name,
+          calories,
+          protein,
+          carbs,
+          fat,
+          detail: "Scanned food",
+        });
+
+        lastAddedCodeRef.current = scanLookup.code;
+        setScanLookup({ status: "success", code: scanLookup.code, name });
+      } catch {
+        if (!cancelled) {
+          setScanLookup({ status: "error", code: scanLookup.code, message: "Lookup failed." });
+        }
+      }
+    };
+
+    fetchFood();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [scanLookup, onAddMealFromScan]);
+
   if (!open) return null;
 
   const handleClose = () => {
+    closeCamera();
     setFoodView("root");
     setMealTab("all");
     setShowCustomForm(false);
@@ -80,14 +245,35 @@ export default function FoodAddSheet({ open, onClose, mode, onCreateFood, custom
                   <span className="sheetActionIcon">🍽️</span>
                   Add meal
                 </button>
-                <button className="sheetAction">
+                <button
+                  className="sheetAction"
+                  onClick={() => {
+                    setCameraMode("barcode");
+                    setCameraError("");
+                    setBarcodeError("");
+                    setCameraOpen(true);
+                  }}
+                >
                   <span className="sheetActionIcon">▮▯▮</span>
                   Scan barcode
                 </button>
-                <button className="sheetAction">
+                <button
+                  className="sheetAction"
+                  onClick={() => {
+                    setCameraMode("photo");
+                    setCameraError("");
+                    setBarcodeError("");
+                    setCameraOpen(true);
+                  }}
+                >
                   <span className="sheetActionIcon">📷</span>
                   Photo Log
                 </button>
+                {barcodeResult ? <div className="scanResult">Last scan: {barcodeResult}</div> : null}
+                {scanLookup?.status === "loading" ? <div className="scanResult">Looking up food…</div> : null}
+                {scanLookup?.status === "success" ? <div className="scanResult">Added: {scanLookup.name}</div> : null}
+                {scanLookup?.status === "error" ? <div className="scanResult">Lookup failed: {scanLookup.message}</div> : null}
+                {capturedImage ? <img className="capturedPreview" src={capturedImage} alt="Captured food" /> : null}
               </div>
             ) : (
               <div className="foodAddBody">
@@ -243,6 +429,47 @@ export default function FoodAddSheet({ open, onClose, mode, onCreateFood, custom
           </>
         )}
       </div>
+
+      {cameraOpen ? (
+        <div className="cameraBackdrop" onClick={closeCamera} role="presentation">
+          <div className="cameraCard" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+            <div className="cameraHeader">
+              <div className="cameraTitle">{cameraMode === "barcode" ? "Scan barcode" : "Photo log"}</div>
+              <button className="xBtn" onClick={closeCamera} aria-label="Close camera">
+                ✕
+              </button>
+            </div>
+            <div className="cameraBody">
+              <video ref={videoRef} className="cameraVideo" autoPlay playsInline />
+              {cameraError ? <div className="cameraError">{cameraError}</div> : null}
+              {barcodeError ? <div className="cameraWarn">{barcodeError}</div> : null}
+              <div className="cameraHint">
+                {cameraMode === "barcode" ? "Center the barcode in the frame." : "Frame your food and tap to capture."}
+              </div>
+              {cameraMode === "photo" && !cameraError ? (
+                <button
+                  className="cameraCapture"
+                  type="button"
+                  onClick={() => {
+                    const video = videoRef.current;
+                    if (!video) return;
+                    const canvas = document.createElement("canvas");
+                    canvas.width = video.videoWidth || 720;
+                    canvas.height = video.videoHeight || 960;
+                    const ctx = canvas.getContext("2d");
+                    if (!ctx) return;
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    setCapturedImage(canvas.toDataURL("image/jpeg", 0.9));
+                    closeCamera();
+                  }}
+                >
+                  Capture
+                </button>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

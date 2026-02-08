@@ -17,7 +17,7 @@ export default function App() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [posts, setPosts] = useState([]);
   const [customFoods, setCustomFoods] = useState([]);
-  const [activeDay, setActiveDay] = useState(() => new Date().getDay());
+  const [selectedDate, setSelectedDate] = useState(() => new Date());
 
   const isWorkoutTab = tab === "workouts";
   const isHomeTab = tab === "home";
@@ -52,21 +52,25 @@ export default function App() {
     setCustomFoods((prev) => [{ ...food, id: `custom_${Date.now()}` }, ...prev]);
   };
 
+  const handleAddMealFromScan = (meal) => {
+    if (!meal) return;
+    setCustomFoods((prev) => [{ ...meal, id: `scan_${Date.now()}`, favorite: false }, ...prev]);
+  };
+
   const handleToggleFavorite = (id) => {
     setCustomFoods((prev) =>
       prev.map((food) => (food.id === id ? { ...food, favorite: !food.favorite } : food))
     );
   };
 
-  const prevDay = () => setActiveDay((idx) => (idx - 1 + 7) % 7);
-  const nextDay = () => setActiveDay((idx) => (idx + 1) % 7);
+  const handleDateChange = (nextDate) => setSelectedDate(nextDate);
 
   return (
     <div className="stage">
       <PhoneFrame>
         <div className="app">
           <TopBar title="Valetudo" withDay={tab === "food"}>
-            {tab === "food" ? <DaySelector activeDay={activeDay} onPrev={prevDay} onNext={nextDay} /> : null}
+            {tab === "food" ? <DaySelector selectedDate={selectedDate} onChangeDate={handleDateChange} /> : null}
           </TopBar>
 
           <main className={`content ${tab === "food" ? "foodContent" : ""}`}>
@@ -123,14 +127,15 @@ export default function App() {
             }}
           />
         ) : (
-          <FoodAddSheet
-            open={sheetOpen}
-            onClose={() => setSheetOpen(false)}
-            mode={mode}
-            onCreateFood={handleCreateFood}
-            customFoods={customFoods}
-            onToggleFavorite={handleToggleFavorite}
-          />
+        <FoodAddSheet
+          open={sheetOpen}
+          onClose={() => setSheetOpen(false)}
+          mode={mode}
+          onCreateFood={handleCreateFood}
+          customFoods={customFoods}
+          onToggleFavorite={handleToggleFavorite}
+          onAddMealFromScan={handleAddMealFromScan}
+        />
         )}
       </PhoneFrame>
     </div>

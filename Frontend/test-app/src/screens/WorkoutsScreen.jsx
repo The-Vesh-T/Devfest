@@ -5,6 +5,7 @@ import {
   addWorkoutSessionWithSets,
   createWorkoutRoutine,
   deleteWorkoutRoutine,
+  listExercisePRs,
   listLastExerciseSets,
   listWorkoutRoutines,
 } from "../lib/workoutRepo";
@@ -460,7 +461,7 @@ function DiscoverWorkoutsSheet({ open, onClose, onToggle, routines }) {
 }
 
 // Active Workout Screen (like Hevy's live workout)
-function ActiveWorkoutScreen({ routine, lastSets, onClose, onComplete }) {
+function ActiveWorkoutScreen({ routine, lastSets, personalRecords, onClose, onComplete }) {
   const workoutStartMsRef = useRef(0);
   const [exercises, setExercises] = useState(() =>
     (routine.exercises || []).map((ex) => {
@@ -611,6 +612,21 @@ function ActiveWorkoutScreen({ routine, lastSets, onClose, onComplete }) {
           <div className="wkExercisesList">
             {exercises.map((ex) => (
               <div key={ex.id} className="wkWorkoutExercise">
+              {(() => {
+                const startingPr = Number(personalRecords?.[ex.name]?.weight);
+                let runningBest = Number.isFinite(startingPr) ? startingPr : 0;
+                const prMarks = ex.sets.map((set) => {
+                  const weight = Number(set.weight);
+                  if (!Number.isFinite(weight) || weight <= 0) return false;
+                  if (weight > runningBest) {
+                    runningBest = weight;
+                    return true;
+                  }
+                  return false;
+                });
+
+                return (
+                  <>
               <div className="wkExerciseHeader">
                 <div className="wkExerciseTitle">
                   <span className="wkExerciseName">{ex.name}</span>
@@ -619,6 +635,9 @@ function ActiveWorkoutScreen({ routine, lastSets, onClose, onComplete }) {
                       Last: {lastSets[ex.name].weight ?? "-"} kg × {lastSets[ex.name].reps ?? "-"}
                     </span>
                   ) : null}
+                  {personalRecords?.[ex.name]?.weight ? (
+                    <span className="wkExercisePr">PR: {personalRecords[ex.name].weight} kg</span>
+                  ) : null}
                 </div>
                 <button className="wkRemoveBtn" onClick={() => removeExercise(ex.id)}>×</button>
               </div>
@@ -626,7 +645,10 @@ function ActiveWorkoutScreen({ routine, lastSets, onClose, onComplete }) {
               <div className="wkSetsList">
                 {ex.sets.map((set, setIdx) => (
                   <div className="wkSetRow" key={set.id}>
-                    <div className="wkSetNum">{setIdx + 1}</div>
+                    <div className={`wkSetNum ${prMarks[setIdx] ? "wkSetNumPr" : ""}`}>
+                      {setIdx + 1}
+                      {prMarks[setIdx] ? <span className="wkPrMedal" aria-label="Personal record">🏅</span> : null}
+                    </div>
                     <input
                       className="wkSetInput"
                       placeholder={
@@ -686,6 +708,9 @@ function ActiveWorkoutScreen({ routine, lastSets, onClose, onComplete }) {
                 ))}
                 <button className="wkAddSetBtn" onClick={() => addSet(ex.id)}>+ Add set</button>
               </div>
+                  </>
+                );
+              })()}
             </div>
           ))}
         </div>
@@ -708,6 +733,27 @@ function ActiveWorkoutScreen({ routine, lastSets, onClose, onComplete }) {
           onClick={() => {
             const durationSeconds = Math.max(0, Math.floor((Date.now() - workoutStartMsRef.current) / 1000));
             const durationLabel = formatDuration(durationSeconds);
+            let prCount = 0;
+            const exerciseSets = exercises.map((ex) => {
+              const startingPr = Number(personalRecords?.[ex.name]?.weight);
+              let runningBest = Number.isFinite(startingPr) ? startingPr : 0;
+              const sets = ex.sets.map((set) => {
+                const weight = Number(set.weight);
+                const isPr = Number.isFinite(weight) && weight > 0 && weight > runningBest;
+                if (isPr) {
+                  runningBest = weight;
+                  prCount += 1;
+                }
+                return {
+                  weight: set.weight,
+                  reps: set.reps,
+                  failure: set.failure,
+                  dropset: set.dropset,
+                  isPr,
+                };
+              });
+              return { name: ex.name, sets };
+            });
             onComplete({
               title: routine.title,
               exerciseCount: exercises.length,
@@ -715,16 +761,9 @@ function ActiveWorkoutScreen({ routine, lastSets, onClose, onComplete }) {
               totalWeight: Math.round(totalWeight),
               durationSeconds,
               durationLabel,
+              prCount,
               exercises: exercises.map((ex) => ex.name),
-              exerciseSets: exercises.map((ex) => ({
-                name: ex.name,
-                sets: ex.sets.map((set) => ({
-                  weight: set.weight,
-                  reps: set.reps,
-                  failure: set.failure,
-                  dropset: set.dropset,
-                })),
-              })),
+              exerciseSets,
             });
           }}
         >
@@ -797,6 +836,7 @@ function WorkoutCompleteSheet({ open, summary, onDone, onPost }) {
     let bestWeight = 0;
     let failureSets = 0;
     let dropsets = 0;
+    let prSets = 0;
 
     sets.forEach((set) => {
       const weight = Number(set?.weight);
@@ -808,6 +848,7 @@ function WorkoutCompleteSheet({ open, summary, onDone, onPost }) {
       bestWeight = Math.max(bestWeight, safeWeight);
       if (set?.failure) failureSets += 1;
       if (set?.dropset) dropsets += 1;
+      if (set?.isPr) prSets += 1;
     });
 
     return {
@@ -818,6 +859,7 @@ function WorkoutCompleteSheet({ open, summary, onDone, onPost }) {
       bestWeight,
       failureSets,
       dropsets,
+      prSets,
     };
   });
 
@@ -825,6 +867,9 @@ function WorkoutCompleteSheet({ open, summary, onDone, onPost }) {
   const totalReps = exerciseBreakdown.reduce((sum, ex) => sum + ex.totalReps, 0);
   const failureCount = exerciseBreakdown.reduce((sum, ex) => sum + ex.failureSets, 0);
   const dropsetCount = exerciseBreakdown.reduce((sum, ex) => sum + ex.dropsets, 0);
+  const prCount = Number.isFinite(Number(summary.prCount))
+    ? Number(summary.prCount)
+    : exerciseBreakdown.reduce((sum, ex) => sum + ex.prSets, 0);
 
   return (
     <div className="wkSheetBackdrop" role="presentation">
@@ -837,6 +882,7 @@ function WorkoutCompleteSheet({ open, summary, onDone, onPost }) {
           <div className="wkDoneStat"><span>Total reps</span><b>{Math.round(totalReps)}</b></div>
           <div className="wkDoneStat"><span>Failure sets</span><b>{failureCount}</b></div>
           <div className="wkDoneStat"><span>Dropsets</span><b>{dropsetCount}</b></div>
+          <div className="wkDoneStat"><span>PRs</span><b>🏅 {prCount}</b></div>
         </div>
         {exerciseBreakdown.length > 0 ? (
           <div className="wkDoneBreakdown">
@@ -883,6 +929,7 @@ export default function WorkoutsScreen({ userId }) {
   const [completeSummary, setCompleteSummary] = useState(null);
   const [actionsOpen, setActionsOpen] = useState(false);
   const [lastSets, setLastSets] = useState(loadLastSets);
+  const [exercisePrs, setExercisePrs] = useState({});
   const anySheetOpen = createOpen || discoverOpen || routineDetailsOpen || actionsOpen;
 
   useEffect(() => {
@@ -1064,19 +1111,28 @@ export default function WorkoutsScreen({ userId }) {
       .filter(Boolean);
     if (names.length === 0) {
       setLastSets({});
+      setExercisePrs({});
       return;
     }
 
     if (useRemote) {
       let active = true;
       (async () => {
-        const { data, error } = await listLastExerciseSets({ userId, exerciseNames: names });
+        const [{ data: lastData, error: lastError }, { data: prData, error: prError }] = await Promise.all([
+          listLastExerciseSets({ userId, exerciseNames: names }),
+          listExercisePRs({ userId, exerciseNames: names }),
+        ]);
         if (!active) return;
-        if (error) {
-          console.error("Failed to load last sets", error);
+        if (lastError) {
+          console.error("Failed to load last sets", lastError);
           return;
         }
-        setLastSets(data || {});
+        if (prError) {
+          console.error("Failed to load PRs", prError);
+          return;
+        }
+        setLastSets(lastData || {});
+        setExercisePrs(prData || {});
       })();
       return () => {
         active = false;
@@ -1085,10 +1141,16 @@ export default function WorkoutsScreen({ userId }) {
 
     const local = loadLastSets();
     const filtered = {};
+    const localPrs = {};
     names.forEach((name) => {
       if (local[name]) filtered[name] = local[name];
+      const weight = Number(local?.[name]?.weight);
+      if (Number.isFinite(weight) && weight > 0) {
+        localPrs[name] = { weight };
+      }
     });
     setLastSets(filtered);
+    setExercisePrs(localPrs);
   }, [useRemote, activeWorkout, userId]);
 
   // Show active workout screen instead of routine list
@@ -1097,6 +1159,7 @@ export default function WorkoutsScreen({ userId }) {
       <ActiveWorkoutScreen
         routine={activeWorkout}
         lastSets={lastSets}
+        personalRecords={exercisePrs}
         onClose={() => setActiveWorkout(null)}
         onComplete={async (summary) => {
           if (useRemote) {
@@ -1125,6 +1188,21 @@ export default function WorkoutsScreen({ userId }) {
           });
           saveLastSets(nextLast);
           setLastSets(nextLast);
+          const nextPrs = { ...exercisePrs };
+          (summary.exerciseSets || []).forEach((exercise) => {
+            const name = exercise?.name;
+            if (!name) return;
+            const base = Number(nextPrs?.[name]?.weight);
+            let best = Number.isFinite(base) ? base : 0;
+            const sets = Array.isArray(exercise.sets) ? exercise.sets : [];
+            sets.forEach((set) => {
+              const weight = Number(set?.weight);
+              if (!Number.isFinite(weight) || weight <= 0) return;
+              if (weight > best) best = weight;
+            });
+            if (best > 0) nextPrs[name] = { weight: best };
+          });
+          setExercisePrs(nextPrs);
           setActiveWorkout(null);
           setCompleteSummary(summary);
         }}

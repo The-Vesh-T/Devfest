@@ -575,6 +575,13 @@
   letter-spacing: 0.2px;
 }
 
+.wkExercisePr{
+  font-size: 11px;
+  color: rgba(251,191,36,0.95);
+  font-weight: 800;
+  letter-spacing: 0.2px;
+}
+
 .wkRemoveBtn{
   width: 28px;
   height: 28px;
@@ -616,6 +623,22 @@
   font-weight: 900;
   display: grid;
   place-items: center;
+  position: relative;
+}
+
+.wkSetNumPr{
+  border-color: rgba(251,191,36,0.45);
+  background: rgba(251,191,36,0.14);
+  color: rgba(255,251,235,0.95);
+}
+
+.wkPrMedal{
+  position: absolute;
+  right: -7px;
+  top: -7px;
+  font-size: 12px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,0.45));
 }
 
 .wkSetInput{

@@ -95,6 +95,7 @@ const toLocalMeal = (meal) => ({
   carbs: toSafeNumber(meal?.carbs),
   fat: toSafeNumber(meal?.fat),
   detail: `${meal?.detail ?? ""}`.trim(),
+  barcode: meal?.barcode ? `${meal.barcode}`.trim() : null,
 })
 
 const toLocalPost = ({ author, title, body }) => ({
@@ -120,7 +121,7 @@ export default function App() {
   const [posts, setPosts] = useState([])
   const [customFoods, setCustomFoods] = useState([])
   const [mealEntries, setMealEntries] = useState([])
-  const [selectedDate, setSelectedDate] = useState(() => new Date(2026, 1, 8))
+  const [selectedDate, setSelectedDate] = useState(() => new Date())
 
   const isWorkoutTab = tab === "workouts"
   const isHomeTab = tab === "home"
@@ -215,6 +216,7 @@ export default function App() {
       dateKey: selectedDateKey,
       meal: localMeal,
       source: "barcode",
+      barcode: localMeal.barcode,
     })
     if (error || !data) {
       console.error("Failed to add scanned meal to Supabase", error)
@@ -363,21 +365,18 @@ export default function App() {
         <div className="app">
           {isAuthenticated ? (
             <>
-              <TopBar withDay={tab === "food"}>
-                {tab === "food" ? <DaySelector selectedDate={selectedDate} onChangeDate={handleDateChange} /> : null}
+              <TopBar title="Valetudo" withDay={tab === "food"}>
+                {tab === "food" ? (
+                  <DaySelector selectedDate={selectedDate} onChangeDate={handleDateChange} />
+                ) : null}
               </TopBar>
 
-              <main
-                className={`content ${
-                  tab === "food" ? "foodContent" : tab === "home" ? "homeContent" : "workoutsContent"
-                }`}
-              >
+              <main className={`content ${tab === "food" ? "foodContent" : ""}`}>
                 {tab === "home" && (
                   <HomeScreen
                     posts={posts}
                     onLogout={handleLogout}
                     currentUser={sessionUser}
-                    selectedDate={selectedDate}
                     onTogglePostLike={handleTogglePostLike}
                     onAddPostReply={handleAddPostReply}
                   />
@@ -388,7 +387,12 @@ export default function App() {
 
               {isHomeTab ? (
                 <button className="fab" onClick={() => setSheetOpen(true)} aria-label="Create post">
-                  +
+                  <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">
+                    <path
+                      d="M4 16.5V20h3.5L18 9.5 14.5 6 4 16.5zM19.5 8a1 1 0 0 0 0-1.4L17.4 4.5a1 1 0 0 0-1.4 0l-1.6 1.6 3.5 3.5 1.6-1.6z"
+                      fill="currentColor"
+                    />
+                  </svg>
                 </button>
               ) : (
                 <button

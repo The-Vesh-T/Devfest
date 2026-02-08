@@ -1,20 +1,12 @@
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+import { createClient } from "@supabase/supabase-js"
 
-let createClient = null;
-try {
-  // Keep Supabase optional for local/dev environments where the package isn't installed.
-  const modName = "@supabase/supabase-js";
-  const mod = await import(/* @vite-ignore */ modName);
-  createClient = mod?.createClient ?? null;
-} catch {
-  createClient = null;
-}
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey && createClient);
+export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey)
 
 export const supabase = isSupabaseConfigured
   ? createClient(supabaseUrl, supabaseAnonKey, {
       auth: { persistSession: false },
     })
-  : null;
+  : null

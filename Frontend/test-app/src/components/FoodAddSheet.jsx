@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { BrowserMultiFormatReader } from "@zxing/browser";
+import { getCatalogFoodByBarcode, upsertCatalogFood } from "../lib/foodRepo";
 import "./FoodAddSheet.css";
 
 export default function FoodAddSheet({
@@ -27,8 +29,19 @@ export default function FoodAddSheet({
   const scanLockRef = useRef(false);
   const lastDetectedCodeRef = useRef("");
   const lastAddedCodeRef = useRef("");
+  const zxingRef = useRef(null);
   const videoRef = useRef(null);
   const streamRef = useRef(null);
+
+  const safeResetZxing = () => {
+    if (!zxingRef.current) return;
+    try {
+      zxingRef.current.reset();
+    } catch {
+      // Ignore scanner reset race conditions.
+    }
+    zxingRef.current = null;
+  };
 
   useEffect(() => {
     setShowCustomForm(false);
@@ -41,6 +54,7 @@ export default function FoodAddSheet({
   }, [open]);
 
   const closeCamera = () => {
+    safeResetZxing();
     if (videoRef.current) {
       try {
         videoRef.current.pause();
@@ -175,7 +189,35 @@ export default function FoodAddSheet({
   useEffect(() => {
     if (!cameraOpen || cameraMode !== "barcode") return;
     if ("BarcodeDetector" in window) return;
-    setBarcodeError("Barcode scanning is not supported on this browser.");
+    if (!videoRef.current) return;
+
+    const reader = new BrowserMultiFormatReader();
+    zxingRef.current = reader;
+
+    try {
+      reader.decodeFromVideoElement(videoRef.current, (result) => {
+        if (!result || scanLockRef.current) return;
+        const code = result.getText();
+        if (!code) return;
+        if (code === lastDetectedCodeRef.current) return;
+        lastDetectedCodeRef.current = code;
+        scanLockRef.current = true;
+        setBarcodeResult(code);
+        setScanLookup({ status: "loading", code });
+        closeCamera();
+      });
+    } catch {
+      setBarcodeError("Unable to start fallback scanner.");
+    }
+
+    return () => {
+      try {
+        reader.reset();
+      } catch {
+        // Ignore scanner reset race conditions.
+      }
+      zxingRef.current = null;
+    };
   }, [cameraOpen, cameraMode]);
 
   useEffect(() => {
@@ -184,7 +226,32 @@ export default function FoodAddSheet({
     let cancelled = false;
 
     const fetchFood = async () => {
+      const commitMeal = (food) => {
+        if (cancelled || !food) return;
+        onAddMealFromScan?.({
+          name: food.name,
+          calories: food.calories,
+          protein: food.protein,
+          carbs: food.carbs,
+          fat: food.fat,
+          detail: food.detail || "Scanned food",
+          barcode: scanLookup.code,
+        });
+
+        lastAddedCodeRef.current = scanLookup.code;
+        setScanLookup({ status: "success", code: scanLookup.code, name: food.name });
+      };
+
       try {
+        const { data: cachedFood, error: cacheError } = await getCatalogFoodByBarcode(scanLookup.code);
+        if (cacheError) {
+          console.error("Failed to read barcode from cache", cacheError);
+        }
+        if (cachedFood) {
+          commitMeal(cachedFood);
+          return;
+        }
+
         const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${scanLookup.code}.json`);
         const data = await res.json();
         if (cancelled) return;
@@ -205,17 +272,25 @@ export default function FoodAddSheet({
         const carbs = toSafeMacro(nutr.carbohydrates_100g ?? nutr.carbohydrates_serving ?? 0);
         const fat = toSafeMacro(nutr.fat_100g ?? nutr.fat_serving ?? 0);
 
-        onAddMealFromScan?.({
+        const scannedFood = {
           name,
           calories,
           protein,
           carbs,
           fat,
           detail: "Scanned food",
-        });
+        };
 
-        lastAddedCodeRef.current = scanLookup.code;
-        setScanLookup({ status: "success", code: scanLookup.code, name });
+        commitMeal(scannedFood);
+
+        const { error: cacheWriteError } = await upsertCatalogFood({
+          barcode: scanLookup.code,
+          food: scannedFood,
+          source: "openfoodfacts",
+        });
+        if (cacheWriteError) {
+          console.error("Failed to cache scanned barcode", cacheWriteError);
+        }
       } catch {
         if (!cancelled) {
           setScanLookup({ status: "error", code: scanLookup.code, message: "Lookup failed." });

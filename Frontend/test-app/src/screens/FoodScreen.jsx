@@ -1,10 +1,15 @@
 import "./FoodScreen.css";
 
 export default function FoodScreen({ meals }) {
-  const calories = meals.reduce((sum, meal) => sum + meal.calories, 0);
+  const safeMeals = Array.isArray(meals) ? meals : [];
+  const toNumber = (value) => {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : 0;
+  };
+  const calories = safeMeals.reduce((sum, meal) => sum + toNumber(meal?.calories), 0);
   const goal = 1800;
   const remaining = Math.max(goal - calories, 0);
-  const pct = Math.min(calories / goal, 1);
+  const pct = Math.max(0, Math.min(calories / goal, 1));
   const radius = 54;
   const circumference = 2 * Math.PI * radius;
   const dashOffset = circumference * (1 - pct);
@@ -50,24 +55,24 @@ export default function FoodScreen({ meals }) {
       </div>
 
       <div className="cardList">
-        {meals.map((meal) => (
-          <div key={meal.id} className="card simple">
+        {safeMeals.map((meal, idx) => (
+          <div key={meal?.id ?? `meal_${idx}`} className="card simple">
             <div className="cardTop">
-              <div className="cardName">{meal.name}</div>
-              <span className="pill">{meal.calories} kcal</span>
+              <div className="cardName">{meal?.name || "Meal"}</div>
+              <span className="pill">{toNumber(meal?.calories)} kcal</span>
             </div>
-            <div className="cardText">{meal.detail}</div>
+            <div className="cardText">{meal?.detail || ""}</div>
             <div className="mealMacros">
               <div className="mealMacro protein">
-                <div className="mealMacroNum">{meal.protein}g</div>
+                <div className="mealMacroNum">{toNumber(meal?.protein)}g</div>
                 <div className="mealMacroLabel">protein</div>
               </div>
               <div className="mealMacro carbs">
-                <div className="mealMacroNum">{meal.carbs}g</div>
+                <div className="mealMacroNum">{toNumber(meal?.carbs)}g</div>
                 <div className="mealMacroLabel">carbs</div>
               </div>
               <div className="mealMacro fat">
-                <div className="mealMacroNum">{meal.fat}g</div>
+                <div className="mealMacroNum">{toNumber(meal?.fat)}g</div>
                 <div className="mealMacroLabel">fat</div>
               </div>
             </div>

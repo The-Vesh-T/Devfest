@@ -52,6 +52,11 @@ export default function App() {
     setCustomFoods((prev) => [{ ...food, id: `custom_${Date.now()}` }, ...prev]);
   };
 
+  const handleAddMealFromScan = (meal) => {
+    if (!meal) return;
+    setCustomFoods((prev) => [{ ...meal, id: `scan_${Date.now()}`, favorite: false }, ...prev]);
+  };
+
   const handleToggleFavorite = (id) => {
     setCustomFoods((prev) =>
       prev.map((food) => (food.id === id ? { ...food, favorite: !food.favorite } : food))
@@ -122,14 +127,15 @@ export default function App() {
             }}
           />
         ) : (
-          <FoodAddSheet
-            open={sheetOpen}
-            onClose={() => setSheetOpen(false)}
-            mode={mode}
-            onCreateFood={handleCreateFood}
-            customFoods={customFoods}
-            onToggleFavorite={handleToggleFavorite}
-          />
+        <FoodAddSheet
+          open={sheetOpen}
+          onClose={() => setSheetOpen(false)}
+          mode={mode}
+          onCreateFood={handleCreateFood}
+          customFoods={customFoods}
+          onToggleFavorite={handleToggleFavorite}
+          onAddMealFromScan={handleAddMealFromScan}
+        />
         )}
       </PhoneFrame>
     </div>

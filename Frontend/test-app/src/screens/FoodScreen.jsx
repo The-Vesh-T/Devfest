@@ -9,6 +9,9 @@ export default function FoodScreen({ meals, onEditMeal, onDeleteMeal }) {
   };
   const toIntString = (value) => `${Math.max(0, Math.round(toNumber(value)))}`;
   const calories = safeMeals.reduce((sum, meal) => sum + toNumber(meal?.calories), 0);
+  const totalProtein = safeMeals.reduce((sum, meal) => sum + toNumber(meal?.protein), 0);
+  const totalCarbs = safeMeals.reduce((sum, meal) => sum + toNumber(meal?.carbs), 0);
+  const totalFat = safeMeals.reduce((sum, meal) => sum + toNumber(meal?.fat), 0);
   const goal = 1800;
   const remaining = Math.max(goal - calories, 0);
   const overBy = Math.max(calories - goal, 0);
@@ -95,19 +98,19 @@ export default function FoodScreen({ meals, onEditMeal, onDeleteMeal }) {
 
       <div className="summaryRow">
         <div className="miniStat kcal">
-          <div className="miniNum">1,280</div>
+          <div className="miniNum">{Math.round(calories).toLocaleString()}</div>
           <div className="miniLabel">kcal</div>
         </div>
         <div className="miniStat protein">
-          <div className="miniNum">92g</div>
+          <div className="miniNum">{Math.round(totalProtein)}g</div>
           <div className="miniLabel">protein</div>
         </div>
         <div className="miniStat carbs">
-          <div className="miniNum">140g</div>
+          <div className="miniNum">{Math.round(totalCarbs)}g</div>
           <div className="miniLabel">carbs</div>
         </div>
         <div className="miniStat fat">
-          <div className="miniNum">42g</div>
+          <div className="miniNum">{Math.round(totalFat)}g</div>
           <div className="miniLabel">fat</div>
         </div>
       </div>

@@ -40,6 +40,16 @@ const normalizeMeal = (row) => ({
   detail: cleanText(row.detail),
 })
 
+const normalizeCommonMeal = (row) => ({
+  id: row.id,
+  name: cleanText(row.name, "Meal"),
+  calories: toNumber(row.calories),
+  protein: toNumber(row.protein),
+  carbs: toNumber(row.carbs),
+  fat: toNumber(row.fat),
+  detail: cleanText(row.detail),
+})
+
 const normalizeCatalogFood = (row) => ({
   barcode: cleanText(row.barcode),
   name: cleanText(row.name, "Scanned food"),
@@ -103,6 +113,16 @@ export const listMealEntries = async ({ userId, dateKey }) => {
   return { data: (data || []).map(normalizeMeal), error }
 }
 
+export const listCommonMeals = async () => {
+  if (!isSupabaseConfigured) return { data: [], error: null }
+  const { data, error } = await supabase
+    .from("common_meals")
+    .select("*")
+    .order("created_at", { ascending: true })
+
+  return { data: (data || []).map(normalizeCommonMeal), error }
+}
+
 export const addMealEntry = async ({ userId, dateKey, meal, source = "manual", barcode = null }) => {
   if (!isSupabaseConfigured || !userId || !dateKey || !meal) return { data: null, error: null }
 
@@ -121,6 +141,39 @@ export const addMealEntry = async ({ userId, dateKey, meal, source = "manual", b
 
   const { data, error } = await supabase.from("meal_entries").insert(payload).select("*").single()
   return { data: data ? normalizeMeal(data) : null, error }
+}
+
+export const updateMealEntry = async ({ userId, id, meal }) => {
+  if (!isSupabaseConfigured || !userId || !id || !meal) return { data: null, error: null }
+
+  const payload = {
+    name: cleanText(meal.name, "Meal"),
+    calories: toNumber(meal.calories),
+    protein: toNumber(meal.protein),
+    carbs: toNumber(meal.carbs),
+    fat: toNumber(meal.fat),
+    detail: cleanText(meal.detail),
+  }
+
+  const { data, error } = await supabase
+    .from("meal_entries")
+    .update(payload)
+    .eq("id", id)
+    .eq("user_id", userId)
+    .select("*")
+    .single()
+
+  return { data: data ? normalizeMeal(data) : null, error }
+}
+
+export const deleteMealEntry = async ({ userId, id }) => {
+  if (!isSupabaseConfigured || !userId || !id) return { error: null }
+  const { error } = await supabase
+    .from("meal_entries")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", userId)
+  return { error }
 }
 
 export const getCatalogFoodByBarcode = async (barcode) => {

@@ -45,6 +45,7 @@
   display: grid;
   grid-template-rows: auto 1fr;
   position: relative;
+  min-height: 0;
 }
 
 .foodAddPage .sheetHeader {
@@ -65,6 +66,8 @@
   grid-template-rows: auto 1fr;
   gap: 12px;
   padding-top: 44px;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .mealTabs {
@@ -101,6 +104,8 @@
 .mealTabPanel {
   display: grid;
   gap: 10px;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .xBtn {
@@ -215,8 +220,27 @@
   display: grid;
   gap: 8px;
   align-content: start;
-  overflow: auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
   padding-bottom: 8px;
+}
+
+/* Let All/Favorites meal rows span to panel margins instead of a narrow fixed width. */
+.foodAddBody > .mealTabPanel > .customList {
+  max-width: none;
+  margin: 0;
+}
+
+.foodAddBody > .mealTabPanel > .customList .sheetOption {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.foodAddBody > .mealTabPanel > .customList .rowBetween > div {
+  flex: 1;
+  min-width: 0;
 }
 
 .customStack .customList,

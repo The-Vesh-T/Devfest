@@ -2,12 +2,13 @@
   position: relative;
   display: grid;
   place-items: center;
-  margin: 8px 0 16px;
+  margin: 0 0 18px;
+  transform: translateY(-12px);
 }
 
 .calRingSvg {
-  width: 160px;
-  height: 160px;
+  width: 206px;
+  height: 206px;
   transform: rotate(-90deg);
 }
 
@@ -24,6 +25,10 @@
   stroke-linecap: round;
   transition: stroke-dashoffset 0.6s ease;
   filter: drop-shadow(0 6px 10px rgba(0,0,0,0.35));
+}
+
+.calRing.overLimit .calRingProgress {
+  stroke: #f87171;
 }
 
 .calRingCenter {
@@ -51,6 +56,11 @@
 .calRingSub {
   font-size: 11px;
   color: rgba(255,255,255,0.60);
+}
+
+.calRing.overLimit .calRingSub {
+  color: #fca5a5;
+  font-weight: 800;
 }
 
 .summaryRow {
@@ -92,6 +102,102 @@
 }
 
 .hint { margin-top: 12px; color: rgba(255,255,255,0.55); font-size: 13px; }
+
+.mealCard {
+  cursor: pointer;
+}
+
+.mealCard:active {
+  transform: translateY(1px);
+}
+
+.mealEditBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.68);
+  display: grid;
+  place-items: center;
+  z-index: 40;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.mealEditCard {
+  width: min(360px, 100%);
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: #10141a;
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+.mealEditHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.mealEditTitle {
+  font-weight: 900;
+}
+
+.mealEditActions {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.mealEditForm {
+  display: grid;
+  gap: 6px;
+  margin-top: -2px;
+}
+
+.mealEditMacroRow {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  align-items: start;
+}
+
+.mealEditField {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  text-align: left;
+}
+
+.mealEditFieldFull {
+  grid-column: 1 / -1;
+}
+
+.mealEditField .input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  margin-bottom: 0;
+  padding: 9px 10px;
+  font-size: 13px;
+  text-align: left;
+}
+
+.mealEditLabel {
+  font-size: 11px;
+  color: rgba(255,255,255,0.68);
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  text-align: left;
+}
+
+.mealDeleteBtn {
+  background: #ef4444;
+  color: #fff;
+}
+
+.mealDeleteBtn:hover {
+  background: #dc2626;
+}
 
 .mealMacros {
   display: grid;
@@ -369,6 +475,10 @@
 }
 
 .foodContent {
+  padding-top: 0;
+}
+
+.content.foodContent {
   padding-top: 0;
 }
 

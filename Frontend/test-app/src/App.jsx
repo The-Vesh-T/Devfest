@@ -387,12 +387,7 @@ export default function App() {
 
               {isHomeTab ? (
                 <button className="fab" onClick={() => setSheetOpen(true)} aria-label="Create post">
-                  <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">
-                    <path
-                      d="M4 16.5V20h3.5L18 9.5 14.5 6 4 16.5zM19.5 8a1 1 0 0 0 0-1.4L17.4 4.5a1 1 0 0 0-1.4 0l-1.6 1.6 3.5 3.5 1.6-1.6z"
-                      fill="currentColor"
-                    />
-                  </svg>
+                  <span className="fabPlus" aria-hidden="true">+</span>
                 </button>
               ) : (
                 <button
@@ -406,7 +401,7 @@ export default function App() {
                   }}
                   aria-label="Add"
                 >
-                  +
+                  <span className="fabPlus" aria-hidden="true">+</span>
                 </button>
               )}
 
